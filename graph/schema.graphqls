@@ -1,0 +1,36 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+scalar Upload
+
+type User {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  img_uri: String
+}
+
+type Query {
+  user: User!
+  users: [User!]!
+}
+
+input NewUser {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  img_uri: String
+}
+
+input ProfileImage {
+  userId: String
+  file: Upload
+}
+
+type Mutation {
+  createUser(input: NewUser!): User!
+  uploadProfileImage(input: ProfileImage!): Boolean!
+}
