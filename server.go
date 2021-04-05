@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/vickywane/api/graph/db"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +21,10 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	Database := db.Connect()
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{
+		DB: Database,
+	}}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

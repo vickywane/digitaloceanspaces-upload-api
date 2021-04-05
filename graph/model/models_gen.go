@@ -7,11 +7,10 @@ import (
 )
 
 type NewUser struct {
-	ID        string  `json:"id"`
-	FirstName string  `json:"firstName"`
-	LastName  string  `json:"lastName"`
-	Email     string  `json:"email"`
-	ImgURI    *string `json:"img_uri"`
+	FullName string  `json:"fullName"`
+	Email    string  `json:"email"`
+	ImgURI   *string `json:"img_uri"`
+	Password string  `json:"password"`
 }
 
 type ProfileImage struct {
@@ -20,9 +19,10 @@ type ProfileImage struct {
 }
 
 type User struct {
-	ID        string  `json:"id"`
-	FirstName string  `json:"firstName"`
-	LastName  string  `json:"lastName"`
-	Email     string  `json:"email"`
-	ImgURI    *string `json:"img_uri"`
+	ID          string `json:"id"`
+	FullName    string `json:"fullName"`
+	Email       string `json:"email"`
+	ImgURI      string `json:"img_uri"`
+	Password    string `json:"password"`
+	DateCreated string `json:"dateCreated"`
 }

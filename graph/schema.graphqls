@@ -6,10 +6,11 @@ scalar Upload
 
 type User {
   id: ID!
-  firstName: String!
-  lastName: String!
+  fullName: String!
   email: String!
-  img_uri: String
+  img_uri: String!
+  password : String!
+  dateCreated : String!
 }
 
 type Query {
@@ -18,11 +19,10 @@ type Query {
 }
 
 input NewUser {
-  id: ID!
-  firstName: String!
-  lastName: String!
+  fullName: String!
   email: String!
   img_uri: String
+  password : String!
 }
 
 input ProfileImage {
