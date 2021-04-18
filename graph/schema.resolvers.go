@@ -27,7 +27,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 		FullName:    input.FullName,
 		Password:    input.Password,
 		Email:       input.Email,
-		ImgURI:      "",
+		ImgURI:      "https://bit.ly/3mCSn2i",
 		DateCreated: time.Now().Format("01-02-2006"),
 	}
 
@@ -48,8 +48,10 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 	key := os.Getenv("ACCESS_KEY")
 	secret := os.Getenv("ACCESS_SECRET")
 
-	_, userErr := r.GetUserField("id", *input.UserID); if userErr != nil {
-		fmt.Errorf("error getting user: %v", userErr)
+	user, userErr := r.GetUserField("ID", *input.UserID)
+
+	if userErr != nil {
+		return false, fmt.Errorf("error getting user: %v", userErr)
 	}
 
 	s3Config := &aws.Config{
@@ -86,19 +88,21 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 
 	object := s3.PutObjectInput{
 		Bucket: aws.String(SpaceName),
-		Key:    aws.String(input.File.Filename),
+		Key:    aws.String(fmt.Sprintf("%v-%v", *input.UserID, input.File.Filename)),
 		Body:   fileBytes,
 		ACL:    aws.String("public-read"),
 	}
 
-	_, uploadErr := s3Client.PutObject(&object)
-	if uploadErr != nil {
-		fmt.Printf("error uploading %v", uploadErr)
-
-		return false, nil
+	if _, uploadErr := s3Client.PutObject(&object); uploadErr != nil {
+		return false, fmt.Errorf("error uploading file: %v", uploadErr)
 	}
 
 	os.Remove("image.png")
+	user.ImgURI = fmt.Sprintf("https://%v.%v.digitaloceanspaces.com/%v-%v", SpaceName, SpaceRegion, *input.UserID, input.File.Filename)
+
+ 	if _, err := r.UpdateUser(user); err != nil {
+		return false, fmt.Errorf("Err updating user: %v", err)
+	}
 
 	return true, nil
 }

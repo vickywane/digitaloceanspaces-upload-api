@@ -17,3 +17,8 @@ func (r *mutationResolver) GetUserField(field, value string) (*model.User, error
 
 	return &user, err
 }
+
+func (r *mutationResolver) UpdateUser(user *model.User) (*model.User, error) {
+	_, err := r.DB.Model(user).Where("id = ?", user.ID).Update()
+	return user, err
+}
