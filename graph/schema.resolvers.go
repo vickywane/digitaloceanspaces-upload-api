@@ -4,25 +4,22 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"io"
+
 	"github.com/satori/go.uuid"
 	"github.com/vickywane/api/graph/generated"
 	"github.com/vickywane/api/graph/model"
 )
-
-type S3PutObjectAPI interface {
-	PutObject(ctx context.Context,
-		params *s3.PutObjectInput,
-		optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
-}
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
 	user := model.User{
@@ -41,76 +38,69 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	return &user, nil
 }
 
-func PutFile(c context.Context, api S3PutObjectAPI, input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
-	return api.PutObject(c, input)
+func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
+	panic("not done")
 }
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
 	SpaceName := os.Getenv("DO_SPACE_NAME")
+	SpaceRegion := os.Getenv("DO_SPACE_REGION")
 	key := os.Getenv("ACCESS_KEY")
 	secret := os.Getenv("ACCESS_SECRET")
-	token := os.Getenv("API_TOKEN")
 
 	_, userErr := r.GetUserField("id", *input.UserID); if userErr != nil {
 		fmt.Errorf("error getting user: %v", userErr)
 	}
 
-	customResolver := aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		return aws.Endpoint{
-			SigningName: "digitaloceanspaces",
-			URL:         fmt.Sprintf("https://.fra1.digitaloceanspaces.com"),
-		}, nil
-	})
-
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
-		func(options *config.LoadOptions) error {
-			options.Credentials = credentials.NewStaticCredentialsProvider(key, secret, token)
-			options.EndpointResolver = customResolver
-			options.Region = "fra1"
-
-			return nil
-		},
-	); if err != nil {
-		fmt.Errorf("error getting config: %v", err)
+	s3Config := &aws.Config{
+		Credentials: credentials.NewStaticCredentials(key, secret, ""),
+		Endpoint:    aws.String(fmt.Sprintf("https://%v.digitaloceanspaces.com", SpaceRegion)),
+		Region:      aws.String(SpaceRegion),
 	}
 
-	client := s3.NewFromConfig(cfg)
+	newSession := session.New(s3Config)
+	s3Client := s3.New(newSession)
 
-	output, err := client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
-		Bucket:  aws.String(SpaceName),
-	})
+	stream, readErr := io.ReadAll(input.File.File)
+	if readErr != nil {
+		fmt.Printf("error from file %v", readErr)
+	}
 
-	fmt.Printf("Error: %v")
-	fmt.Println(output)
-	//objectsInput := &s3.ListObjectsV2Input{
-	//	Bucket:  aws.String(SpaceName),
-	//}
+	fileErr := os.WriteFile("image.png", stream, 0644)
+	if fileErr != nil {
+		fmt.Printf("file err %v", fileErr)
+	}
 
-	//objects, err := client.ListObjectsV2(context.TODO(), objectsInput)
-	//
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//
-	//fmt.Println(objects)
+	file, openErr := os.Open("image.png")
+	if openErr != nil {
+		fmt.Printf("Error opening file: %v", openErr)
+	}
 
-	//fileInput := &s3.PutObjectInput{
-	//	Bucket: aws.String(SpaceName),
-	//	Key:    aws.String(input.File.Filename),
-	//	Body:   input.File.File,
-	//	ACL:    "public-read",
-	//}
-	//
-	////_, putErr := client.PutObject(context.TODO(), fileInput); if putErr != nil {
-	////	fmt.Printf("error uploading file: %v", err)
-	////}
+	defer file.Close()
+
+	buffer := make([]byte, input.File.Size)
+
+	file.Read(buffer)
+
+	fileBytes := bytes.NewReader(buffer)
+
+	object := s3.PutObjectInput{
+		Bucket: aws.String(SpaceName),
+		Key:    aws.String(input.File.Filename),
+		Body:   fileBytes,
+		ACL:    aws.String("public-read"),
+	}
+
+	_, uploadErr := s3Client.PutObject(&object)
+	if uploadErr != nil {
+		fmt.Printf("error uploading %v", uploadErr)
+
+		return false, nil
+	}
+
+	os.Remove("image.png")
 
 	return true, nil
-}
-
-func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
