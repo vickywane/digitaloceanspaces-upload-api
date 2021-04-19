@@ -316,8 +316,8 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 
 Going through the CreateUser mutation in the code snippet above, you would observe two things about the user rows inserted;
 
-*   Each row inserted is given a unique UUID formatted as a string
-*   Each row is given a placeholder image to be used until an actual profile image uploaded by the user
+*   Each row inserted is given a unique UUID formatted as a string.
+*   Each row is given a placeholder image to be used until an actual profile image uploaded by the user.
 
 To test the resolver above from your browser, navigate to `http://localhost:8080` to access the GraphQL playground built-in to your GraphQL API. Paste the GraphQL Mutation below into the playground editor to insert a new user record using the CreateUser mutation.
 
@@ -337,7 +337,7 @@ mutation createUser {
 }
 ```
 
-![Imgur](https://i.imgur.com/57Q16Ir.png)
+![A create user muation on the GraphQL Playround](https://i.imgur.com/57Q16Ir.png)
 
 At this point, you have the `UploadProfileImage` mutation resolver function left to implement, but before you implement this function, you need to implement the query resolver first. This is because  each upload is linked to a specific user, hence the need to retrieve the ID of a specific user before uploading an image.
 
@@ -388,7 +388,7 @@ query getUsers {
 }
 ```
 
-![alt_text](https://i.imgur.com/WPLxxm7.png "image_tooltip")
+![A query muation to retrieve a user using the GraphQL Playround](https://i.imgur.com/WPLxxm7.png "image_tooltip")
 
 
 At this point, you have now implemented both the `CreateUser` mutation and the `User` query. All is in place for you to move on to uploading images for a user to a bucket within Digitalocean spaces.
@@ -400,7 +400,7 @@ To begin, navigate to the Spaces section of your DigitalOcean console where you 
 
 Click the **Create New Space** button, leave other settings at their default values and specify a unique name for the new space as shown below before creating your new space;
 
-![Imgur](https://i.imgur.com/Aifnmzf.png)
+![Digitalocean spaces](https://i.imgur.com/Aifnmzf.png)
 
 After the new Space has been created, navigate to the settings tab and copy the space’s endpoint into the GraphQL project environment variables.
 
@@ -549,11 +549,10 @@ After the file has been uploaded, the following boolean status would be printed 
 
 Going through your created bucket within the Spaces section of the Digitalocean console, you would find the image recently uploaded from your terminal.
 
-![Imgur](https://i.imgur.com/o4f5P7N.png)
+![A bucket within Digitalocean showing a list of uploaded files](https://i.imgur.com/o4f5P7N.png)
 
 
 Also, if you query the user’s data after a successful file upload, you would observe that the img_uri field returned in the user’s data points to the file recently uploaded to your bucket.
-
 
 
 At this point, you have a functional backend application exposing a GraphQL with mutation resolvers that you can use to insert a new user record into a connected Postgresql database and also upload an image for the new user.
@@ -562,10 +561,11 @@ you can move a step further to deploy this application to the Digitalocean App p
 
 
 ### Deploying GraphQL API to App Platform
+<$>[info]
+**Info:**  [App platform](https://www.digitalocean.com/products/app-platform/) is a Digitalocean service product that makes it much easier to build, deploy, and even scale your applications. App platform supports a variety of languages and within this article, you would utilize the support for applications written in Go and stored within GitHub.
 
-[App platform](https://www.digitalocean.com/products/app-platform/) is a Digitalocean service product that makes it much easier to build, deploy, and even scale your applications. App platform supports a variety of languages and within this article, you would utilize the support for applications written in Go and stored within GitHub.
-
-To begin shipping your code, create a local git repository by executing the command below from a terminal;
+To begin depoying your backend application, create a local git repository by executing the command below from a terminal;
+<$>
 
 ```command
  git init
@@ -591,7 +591,7 @@ From your Digitalocean dashboard, navigate to the Apps section and select GitHub
 In the next configuration page, define the environment variables for the application as defined in your local `.env` file as shown below;
 
 
-![Imgur](https://i.imgur.com/tiEl0wx.png)
+![Environment variables for deploying a Golang Application to Digitalocean App Platform](https://i.imgur.com/tiEl0wx.png)
 
 
 Leaving other settings at their defaults, click the **Next** button to move to the next page where you would give this deployment a unique name, then navigate to the remaining pages to finalize the deployment and build the app.
@@ -601,7 +601,7 @@ Leaving other settings at their defaults, click the **Next** button to move to t
 
 At this point, the application has been fully deployed to DigitalOcean, with a healthy running status similar to the one shown in the image below;
 
-![Imgur](https://i.imgur.com/Nbjeph7.png)
+![Health status of a Golang application deployed to Digitalocean App Platform](https://i.imgur.com/Nbjeph7.png)
 
 
 Take note of the endpoint URL of your deployed application placed below the application name. you would use this endpoint to test the upload feature implemented in the deployed GraphQL API with Postman as an API testing tool.
@@ -622,7 +622,7 @@ From your Postman collection, create a new POST request with a form-data body ha
 *   userId: &lt;USER_ID>
 *   file: &lt;LOCAL_FILE>
 
-![Imgur](https://i.imgur.com/fOj229w.png)
+![Using Postman Form-Body to add images to a POST request using a GraphQL API](https://i.imgur.com/fOj229w.png)
 
 
 Hit the Send button to send the POST request, then reload your Digitalocean Space bucket to see your newly uploaded file.
