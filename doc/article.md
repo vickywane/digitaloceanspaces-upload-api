@@ -3,7 +3,7 @@
 
 ### Introduction
 
-The ability of a user to upload their personal files when using an application is often considered as a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design.
+The ability of a user to upload their personal files when using an application is often considered as a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design in your client application.
 
 In this article, you would learn how file uploads functionality can be built out in a GraphQL API implemented in Golang. To make the tutorial easy to follow through, it has been broken down into smaller steps;                                                                                                                                                                                      
 
