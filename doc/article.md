@@ -5,17 +5,7 @@
 
 The ability of a user to upload their personal files when using an application is often considered as a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design.
 
-In this article, you would learn how file uploads functionality can be built out in a GraphQL API implemented in Golang. To make the tutorial easy to follow through, it has been broken down into smaller sections. You can either follow them in the order which they appear below or skip to what part interests you most;
-
-
-
-*   Bootstrapping a Golang GraphQL API
-*   Defining Application GraphQL Schema
-*   Implementing Schema resolvers
-*   Digitalocean Spaces API for file Storage
-*   Deploying Golang GraphQL application to the App platform.                                                           
-
-**                                                                                                                                   **
+In this article, you would learn how file uploads functionality can be built out in a GraphQL API implemented in Golang. To make the tutorial easy to follow through, it has been broken down into smaller steps;                                                                                                                                                                                      
 
 ## Prerequisites
 
