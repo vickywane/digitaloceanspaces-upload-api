@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"io"
+	"io/ioutil"
 
 	"github.com/satori/go.uuid"
 	"github.com/vickywane/api/graph/generated"
@@ -43,6 +43,8 @@ func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 }
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
+	fmt.Println("FIRED THIS MUTATION")
+
 	SpaceName := os.Getenv("DO_SPACE_NAME")
 	SpaceRegion := os.Getenv("DO_SPACE_REGION")
 	key := os.Getenv("ACCESS_KEY")
@@ -63,12 +65,12 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 	newSession := session.New(s3Config)
 	s3Client := s3.New(newSession)
 
-	stream, readErr := io.ReadAll(input.File.File)
+	stream, readErr := ioutil.ReadAll(input.File.File)
 	if readErr != nil {
 		fmt.Printf("error from file %v", readErr)
 	}
 
-	fileErr := os.WriteFile("image.png", stream, 0644)
+	fileErr := ioutil.WriteFile("image.png", stream, 0644)
 	if fileErr != nil {
 		fmt.Printf("file err %v", fileErr)
 	}
