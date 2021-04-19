@@ -52,7 +52,8 @@ By default, the `gqlgen init` command would generate a boilerplate application h
 Replace the boilerplate code in the schema.graphqls file with the schema below;
 
 
-```
+``` [label schema.graphls]
+
  type Query {
    getUser: User! 
 }
@@ -96,7 +97,7 @@ The Gqlgen package being used is based on a schema first approach. A time-saving
 To utilize the code generation, run `gqlgen generate` from a terminal within your project and observe the code below being added to the `schema.resolvers.go` file.
 
 
-### Step 3 — Provisioning and Using a Managed Database Instance on DigitalOcean 
+## Step 3 — Provisioning and Using a Managed Database Instance on DigitalOcean 
 
 Although the application would not store images directly in a database, it still needs a database to insert each user‘s record. The stored record would then contain links to the uploaded files.
 
@@ -109,7 +110,8 @@ After the cluster has been created, the connection details of the cluster would 
   
 
 
-```
+```[label .env]
+
  DB_PASSWORD=<PASSWORD>
  DB_PORT=<PORT>
  DB_NAME=<DATABASE>
@@ -123,7 +125,8 @@ With the connection details securely stored in the .env file above, the next ste
 Create a db.go file within the `graph` directory and add the code below which establishes a database connection, into the file;
 
 
-```
+```[label server.go]
+
 package db
 
 import (
@@ -189,7 +192,7 @@ Next, you need to add this package to the main application so the database conne
 Open the server.go file in your preferred code editor. You need to modify the `server.go` file with the code snippet below to utilize the previously created `db` package immediately after the application is started.
 
 
-```
+```[label db/db.go]
  package main
 
 import (
@@ -233,10 +236,10 @@ Within the code snippet above, you expressed the Connect function from the DB pa
 
 Lastly, you need to specify the data type of the DB field you added in the Resolver struct above.
 
-To achieve this, open the `resolver.js` file and modify the Resolver struct to have a DB field with a `go-pg` pointer as its type as shown below;
+To achieve this, open the `resolver.go` file and modify the Resolver struct to have a DB field with a `go-pg` pointer as its type as shown below;
 
 
-```
+``` [label resolver.go]
 package resolvers
 
 import (
@@ -256,7 +259,7 @@ type Resolver struct {
 Now a database connection would be established each time the entry `server.go` file is run and the `go-pg` package can be used as an ORM to perform operations on the database from the resolver functions. 
 
 
-### Step 4 — Implementing Generated Resolvers
+## Step 4 — Implementing Generated Resolvers
 
 In GraphQL, a resolver is a function that resolves the value for a field in the defined schema. Utilizing Gqlgen’s code generation feature, you can generate the boilerplate functions for the defined resolvers using this feature, then focus on implementing how the fields are resolved for the Query and Mutation resolvers next.
 
@@ -268,7 +271,7 @@ Going through the `schema.graphqls` file, there are only two mutation resolvers 
 Modify the `CreateUser` mutation with the code snippet below to insert a new row containing the user details input into the database
 
 
-```
+```[label schema.resolver.go]
 package graph
 
 import (
@@ -317,7 +320,7 @@ As defined in the `schema.graphqls` file, one query resolver was generated for t
 Modify the generated `Users` query resolver with the code snippet below to query all user rows within the database.
 
 
-```
+```[label schema.graphqls]
 package graph
 
 import (
@@ -370,7 +373,7 @@ Click the **Create New Space** button, leave other settings at their default val
 After the new space has been created, navigate to the settings tab and copy the space’s endpoint into the GraphQL project environment variables.
 
 
-```
+```[label .env]
 SPACE_ENDPOINT=<BUCKET_ENDPOINT>
 ```
 
@@ -378,7 +381,7 @@ SPACE_ENDPOINT=<BUCKET_ENDPOINT>
 Next, using t[his guide](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#access-keys) within the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend application. After creating them, copy the values and store them in your backend application’s `.env` file in the format below;
 
 
-```
+```[label .env]
 ACCESS_KEY=<SPACE_ACCESS_KEY>
 SECRET_KEY=<SPACE_SECRET_KEY>
 ```
@@ -389,7 +392,7 @@ One way to perform operations on your Digitalocean Space is through the use of s
 To implement the file uploads, modify the `UploadProfileImage` mutation function within the `Schema.resolvers.go` file with the code below which uploads an image from the resolver function into our Digitalocean Spaces bucket.
 
 
-```
+```[label schema.resolvers.go]
 package graph
 
 import (
