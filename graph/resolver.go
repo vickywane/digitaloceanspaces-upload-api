@@ -13,7 +13,7 @@ type Resolver struct{
 func (r *mutationResolver) GetUserField(field, value string) (*model.User, error) {
 	user := model.User{}
 
-	err := r.DB.Model(&user).Where(fmt.Sprintf("%v = ?", field), value).First()
+	err := r.DB.Model(&user).Limit(1).Where(fmt.Sprintf("%v = ?", field), value).First()
 
 	return &user, err
 }

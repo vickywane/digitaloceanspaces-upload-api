@@ -43,8 +43,6 @@ func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 }
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
-	fmt.Println("FIRED THIS MUTATION")
-
 	SpaceName := os.Getenv("DO_SPACE_NAME")
 	SpaceRegion := os.Getenv("DO_SPACE_REGION")
 	key := os.Getenv("ACCESS_KEY")

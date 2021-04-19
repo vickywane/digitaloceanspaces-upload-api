@@ -316,13 +316,30 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 
 Going through the CreateUser mutation in the code snippet above, you would observe two things about the user rows inserted;
 
-
-
 *   Each row inserted is given a unique UUID formatted as a string
 *   Each row is given a placeholder image to be used until an actual profile image uploaded by the user
 
-At this point, you have the `UploadProfileImage` mutation resolver function left to implement, but before you implement this function, you need to implement the query resolver first. This is because  each upload is linked to a specific user, hence the need to retrieve the ID of a specific user before uploading an image.
+To test the resolver above from your browser, navigate to `http://localhost:8080` to access the GraphQL playground built-in to your GraphQL API. Paste the GraphQL Mutation below into the playground editor to insert a new user record using the CreateUser mutation.
 
+```graphql
+[label graphql]
+
+mutation createUser {
+  createUser(
+    input: {
+      email: "johndoe@gmail.com"
+      fullName: "John Doe"
+      password: "password"
+    }
+  ) {
+    id
+  }
+}
+```
+
+![Imgur](https://i.imgur.com/57Q16Ir.png)
+
+At this point, you have the `UploadProfileImage` mutation resolver function left to implement, but before you implement this function, you need to implement the query resolver first. This is because  each upload is linked to a specific user, hence the need to retrieve the ID of a specific user before uploading an image.
 
 #### Query Resolver
 
@@ -354,11 +371,24 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 }
 ```
 
+From the code snippet above, you were able to fetch all users by using go-pg’s `select` method on the `User` model without a `WHERE` or `LIMIT` clause.
 
-From the code snippet above, you are able to fetch all users by using go-pg’s `select` method on the `User` model without a where or limit clause attached.
+To test this resolver from your browser, navigate to `http://localhost:8080` to access the GraphQL playground built-in to your GraphQL API. Paste the GraphQL Query below into the playground editor to test the new Query resolver.
 
+```graphql
+[label graphql]
+query getUsers {
+  users {
+      email
+      fulName
+      dateCreated
+      id
+      img_uri
+  }
+}
+```
 
-![alt_text](images/image1.png "image_tooltip")
+![alt_text](https://i.imgur.com/WPLxxm7.png "image_tooltip")
 
 
 At this point, you have now implemented both the `CreateUser` mutation and the `User` query. All is in place for you to move on to uploading images for a user to a bucket within Digitalocean spaces.
@@ -370,15 +400,9 @@ To begin, navigate to the Spaces section of your DigitalOcean console where you 
 
 Click the **Create New Space** button, leave other settings at their default values and specify a unique name for the new space as shown below before creating your new space;
 
+![Imgur](https://i.imgur.com/Aifnmzf.png)
 
-
-<p id="gdcalert2" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/image2.png). Store image on your image server and adjust path/filename/extension if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert3">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/image2.png "image_tooltip")
-
-
-After the new space has been created, navigate to the settings tab and copy the space’s endpoint into the GraphQL project environment variables.
+After the new Space has been created, navigate to the settings tab and copy the space’s endpoint into the GraphQL project environment variables.
 
 
 ```bash
@@ -387,7 +411,7 @@ SPACE_ENDPOINT=<BUCKET_ENDPOINT>
 ```
 
 
-Next, using t[his guide](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#access-keys) within the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend application. After creating them, copy the values and store them in your backend application’s `.env` file in the format below;
+Next, using [this guide](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#access-keys) within the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend application. After creating them, copy the values and store them in your backend application’s `.env` file in the format below;
 
 
 ```bash
@@ -490,11 +514,10 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 ```
 
 
-Going through the entire function above, you would observe the following being performed in the following order;
+Going through the entire function above, you would observe the following operations being performed in the following order;
 
 
-
-*   First, using the helper function you wrote in the `resolver.go` file, the user row having the UserID argument as an ID is queried from the database to confirm that you are trying to upload a file for an actual user.
+*   First, using the helper function in the `resolver.go` file, the user row having the UserID argument as an ID is queried from the database to confirm that you are trying to upload a file for an actual user.
 *   Next, you configured the SDK client for Digitalocean spaces using an access key and secret key credentials obtained from the Digitalocean console.
 *   Next, using the `ReadAll` method from the `io` package, you read the entire content of the file added to the HTTP request sent to the GraphQL API, then a temporary file was created to dump this content into.
 *   Next, you added the `PutObjectInput` struct fields having the `Bucket` field as the name of the Space on DigitalOcean, the `Key` field as the name of the file being uploaded, the `Body` field as the temporary file you created, and lastly the ACL ( Access Control Lock) field to set the permission type on the file.
@@ -516,9 +539,7 @@ To test the new mutation resolver, execute the command below to make an HTTP req
 curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImage($image: Upload! $userId : String!) { uploadProfileImage(input: { file: $image  userId : $userId}) }", "variables": { "image": null, "userId" : "121212" } }' -F map='{ "0": ["variables.image"] }'  -F 0=@sample.jpeg
 ```
 
-
-
-#### After the file has been uploaded, the following boolean status would be printed out in the terminal as the request-response, indicating that the file upload was successful. 
+After the file has been uploaded, the following boolean status would be printed out in the terminal as the request-response, indicating that the file upload was successful. 
 
 
 ```
@@ -526,23 +547,13 @@ curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImag
 {"data": { "uploadProfileImage": true }}
 ```
 
+Going through your created bucket within the Spaces section of the Digitalocean console, you would find the image recently uploaded from your terminal.
 
-
-#### Going through your created bucket within the Spaces section of the Digitalocean console, you would find the image recently uploaded from your terminal.
-
-
-
-<p id="gdcalert3" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/image3.png). Store image on your image server and adjust path/filename/extension if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert4">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
-
-
-![alt_text](images/image3.png "image_tooltip")
-
+![Imgur](https://i.imgur.com/o4f5P7N.png)
 
 
 Also, if you query the user’s data after a successful file upload, you would observe that the img_uri field returned in the user’s data points to the file recently uploaded to your bucket.
 
-
-![alt_text](images/image4.png "image_tooltip")
 
 
 At this point, you have a functional backend application exposing a GraphQL with mutation resolvers that you can use to insert a new user record into a connected Postgresql database and also upload an image for the new user.
@@ -580,7 +591,7 @@ From your Digitalocean dashboard, navigate to the Apps section and select GitHub
 In the next configuration page, define the environment variables for the application as defined in your local `.env` file as shown below;
 
 
-![alt_text](images/image5.png "image_tooltip")
+![Imgur](https://i.imgur.com/tiEl0wx.png)
 
 
 Leaving other settings at their defaults, click the **Next** button to move to the next page where you would give this deployment a unique name, then navigate to the remaining pages to finalize the deployment and build the app.
@@ -590,7 +601,7 @@ Leaving other settings at their defaults, click the **Next** button to move to t
 
 At this point, the application has been fully deployed to DigitalOcean, with a healthy running status similar to the one shown in the image below;
 
-![alt_text](images/image6.png "image_tooltip")
+![Imgur](https://i.imgur.com/Nbjeph7.png)
 
 
 Take note of the endpoint URL of your deployed application placed below the application name. you would use this endpoint to test the upload feature implemented in the deployed GraphQL API with Postman as an API testing tool.
@@ -611,7 +622,7 @@ From your Postman collection, create a new POST request with a form-data body ha
 *   userId: &lt;USER_ID>
 *   file: &lt;LOCAL_FILE>
 
-![alt_text](images/image7.png "image_tooltip")
+![Imgur](https://i.imgur.com/fOj229w.png)
 
 
 Hit the Send button to send the POST request, then reload your Digitalocean Space bucket to see your newly uploaded file.
