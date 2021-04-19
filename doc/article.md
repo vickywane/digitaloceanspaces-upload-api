@@ -16,7 +16,7 @@ To get the best out of this article, you would need the following;
 -  Basic knowledge of Golang. If you are new to Golang, this article provides an explanation of Golang, including how to configure your local machine for developing with Golang.
 -   An understanding of Graph Query Language ( GraphQL ). You can learn more about GraphQL by following the 
 -   An active Digitalocean account, as several Digitalocean resources are used within this article.
-
+-  Git installed and configured on your local machine.
 
 ## Step 1 — Bootstrapping a Golang GraphQL API
 
@@ -499,7 +499,7 @@ It is important to note that the reason why you are using a temporary file to st
 To test the new mutation resolver, execute the command below to make an HTTP request to the GraphQL API using cURL, adding an image into the request form body. 
 
 
-```
+``` command
 
 
 curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImage($image: Upload! $userId : String!) { uploadProfileImage(input: { file: $image  userId : $userId}) }", "variables": { "image": null, "userId" : "121212" } }' -F map='{ "0": ["variables.image"] }'  -F 0=@sample.jpeg
@@ -737,7 +737,7 @@ After the cluster has been created, the connection details of the cluster would 
   
 
 
-```
+```[label .env]
  DB_PASSWORD=<PASSWORD>
  DB_PORT=<PORT>
  DB_NAME=<DATABASE>
@@ -751,7 +751,7 @@ With the connection details securely stored in the .env file above, the next ste
 Create a db.go file within the `graph` directory and add the code below which establishes a database connection, into the file;
 
 
-```
+```[label db/db.go]
 package db
 
 import (
@@ -817,7 +817,7 @@ Next, you need to add this package to the main application so the database conne
 Open the server.go file in your preferred code editor. You need to modify the `server.go` file with the code snippet below to utilize the previously created `db` package immediately after the application is started.
 
 
-```
+```[label server.go]
  package main
 
 import (
@@ -861,10 +861,10 @@ Within the code snippet above, you expressed the Connect function from the DB pa
 
 Lastly, you need to specify the data type of the DB field you added in the Resolver struct above.
 
-To achieve this, open the `resolver.js` file and modify the Resolver struct to have a DB field with a `go-pg` pointer as its type as shown below;
+To achieve this, open the `resolver.go` file and modify the Resolver struct to have a DB field with a `go-pg` pointer as its type as shown below;
 
 
-```
+```[label resolver.go]
 package resolvers
 
 import (
@@ -896,7 +896,7 @@ Going through the `schema.graphqls` file, there are only two mutation resolvers 
 Modify the `CreateUser` mutation with the code snippet below to insert a new row containing the user details input into the database
 
 
-```
+```[label schema.resolvers.go]
 package graph
 
 import (
@@ -945,7 +945,7 @@ As defined in the `schema.graphqls` file, one query resolver was generated for t
 Modify the generated `Users` query resolver with the code snippet below to query all user rows within the database.
 
 
-```
+```[label schema.resolver.go]
 package graph
 
 import (
@@ -998,7 +998,7 @@ Click the **Create New Space** button, leave other settings at their default val
 After the new space has been created, navigate to the settings tab and copy the space’s endpoint into the GraphQL project environment variables.
 
 
-```
+```[label .env]
 SPACE_ENDPOINT=<BUCKET_ENDPOINT>
 ```
 
@@ -1006,7 +1006,7 @@ SPACE_ENDPOINT=<BUCKET_ENDPOINT>
 Next, using t[his guide](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#access-keys) within the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend application. After creating them, copy the values and store them in your backend application’s `.env` file in the format below;
 
 
-```
+```[label .env]
 ACCESS_KEY=<SPACE_ACCESS_KEY>
 SECRET_KEY=<SPACE_SECRET_KEY>
 ```
@@ -1017,7 +1017,7 @@ One way to perform operations on your Digitalocean Space is through the use of s
 To implement the file uploads, modify the `UploadProfileImage` mutation function within the `Schema.resolvers.go` file with the code below which uploads an image from the resolver function into our Digitalocean Spaces bucket.
 
 
-```
+```[label schema.resolver.go]
 package graph
 
 import (
@@ -1124,7 +1124,7 @@ It is important to note that the reason why you are using a temporary file to st
 To test the new mutation resolver, execute the command below to make an HTTP request to the GraphQL API using cURL, adding an image into the request form body. 
 
 
-```
+```[label curl]
 
 
 curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImage($image: Upload! $userId : String!) { uploadProfileImage(input: { file: $image  userId : $userId}) }", "variables": { "image": null, "userId" : "121212" } }' -F map='{ "0": ["variables.image"] }'  -F 0=@sample.jpeg
@@ -1171,14 +1171,15 @@ you can move a step further to deploy this application to the Digitalocean App p
 
 [App platform](https://www.digitalocean.com/products/app-platform/) is a Digitalocean service product that makes it much easier to build, deploy, and even scale your applications. App platform supports a variety of languages and within this article, you would utilize the support for applications written in Go and stored within GitHub.
 
-To begin shipping your code, create a local git repository and add your latest changes into the local repository by running the commands below one at a time from your terminal;
+To begin shipping your code, create a local git repository by executing the command below from a terminal;
 
-
-```
- # create a git repository
+```command
  git init
+```
 
- # add latest changes in a git repository 
+Then add your latest changes into the local repository by running the command below from your terminal
+
+```command 
  git add . && git commit -m "feat: implemented upload functionality in GraphQL API"
 ```
 
