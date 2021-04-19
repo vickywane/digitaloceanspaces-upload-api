@@ -14,7 +14,7 @@ To get the best out of this article, you would need the following;
 
 
 -  Basic knowledge of Golang. If you are new to Golang, this article provides an explanation of Golang, including how to configure your local machine for developing with Golang.
--   An understanding of Graph Query Language ( GraphQL ). 
+-   An understanding of Graph Query Language ( GraphQL ). You can learn more about GraphQL by following the 
 -   An active Digitalocean account, as several Digitalocean resources are used within this article.
 
 
