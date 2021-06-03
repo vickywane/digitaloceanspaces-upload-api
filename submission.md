@@ -3,9 +3,9 @@
 
 ### Introduction
 
-The ability of a user to upload their personal files when using an application is often considered as a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design in your client application.
+The ability of a user to upload their personal files when using an application is often considered a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design in your client application.
 
-In this article, you would build a GraphQL API using Golang that has the ability to recieve a media file from a [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/) and upload the file to a bucket within [Digitalocean Spaces](https://www.digitalocean.com/products/spaces/).
+In this article, you would build a GraphQL API using Golang that has the ability to receive a media file from a [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/) and upload the file to a bucket within [Digitalocean Spaces](https://www.digitalocean.com/products/spaces/).
 
 As you follow through the steps in this article, you would learn about the [Spaces](https://www.digitalocean.com/products/spaces/), and [Managed Databases](https://www.digitalocean.com/products/managed-databases/) products from [Digitalocean](https://www.digitalocean.com) and how you can programmatically upload files to a created bucket from a Golang Application using an S3-compatible [AWS-GO](https://docs.aws.amazon.com/sdk-for-go/api/) SDK.
 
@@ -23,17 +23,17 @@ To get the best out of this article, you would need the following;
 
 ## Terminologies
 
-Below are some frequently terminologies used when working GraphQL. Understanding what these terminologies mean would be quite helpful as they often used when working within this tutorial;
+Below are some frequent terminologies used when working GraphQL. Understanding what these terminologies mean would be quite helpful as they often used when working within this tutorial;
 
-- Resolver: As the name implies, a resolver is a function that resolves or returns a value for a GraphQL field. This value could be an object or a scalar type such as a string, number or even a boolean. In this article, we would use a resolver to mutate data within the GraphQL API.
+- Resolver: As the name implies, a resolver is a function that resolves or returns a value for a GraphQL field. This value could be an object or a scalar type such as a string, number, or even a boolean. In this article, we would use a resolver to mutate data within the GraphQL API.
 
 - Query:  A query is an operation in GraphQL to fetch data, similar to the `GET` HTTP verb in a REST API.
 
-- Mutation: A mutation is an operation used to insert or mutate exisiting data in a GraphQL application, similar to the `POST`, `PATCH`, `PUT` HTTP verbs in a REST API. 
+- Mutation: A mutation is an operation used to insert or mutate existing data in a GraphQL application, similar to the `POST`, `PATCH`, `PUT` HTTP verbs in a REST API. 
 
 ## Step 1 — Bootstrapping a Golang GraphQL API
 
-In this article, you would use the [Gqlgen](https://github.com/99designs/gqlgen) library to boostrap the GraphQL API. Gqlgen is a Go library for building GraphQL APIs. A Schema first approach and Code generation are two important features which Gqlgen provides that would be beneficial while building this API.
+In this article, you would use the [Gqlgen](https://github.com/99designs/gqlgen) library to bootstrap the GraphQL API. Gqlgen is a Go library for building GraphQL APIs. A Schema first approach and Code generation are two important features that Gqlgen provides that would be beneficial while building this API.
 
 Using the Schema First Approach feature, you get to define the data model for the API using the GraphQL [Schema Definition Language](http://graphql.org/learn/schema/) (SDL), then you generate the boilerplate code for the API from the defined schema using the code generation feature. 
 
@@ -60,9 +60,9 @@ Running the `gqlgen` command above would generate a `server.go` file for running
 
 ### Defining Application GraphQL Schema
 
-By default, the `gqlgen init` command previously executed would generate the schema for a TODO application within the `schema.graphqls` file. While this is a valid schema, the application intentded for this tutorial is not a TODO application. Hence, you would need to change the boilerplate schema.
+By default, the `gqlgen init` command previously executed would generate the schema for a TODO application within the `schema.graphqls` file. While this is a valid schema, the application intended for this tutorial is not a TODO application. Hence, you would need to change the boilerplate schema.
 
-To create a suitable schema for the API we are building, open the `schema.graphqls` file in your prefferred code editor and replace the boilerplate schema with the schema in the code snippet below;
+To create a suitable schema for the API we are building, open the `schema.graphqls` file in your preferred code editor and replace the boilerplate schema with the schema in the code snippet below;
 
 
 ```graphql
@@ -113,7 +113,7 @@ At this point, you have defined the structure of the data model for the applicat
 
 ## Step 2 — Generating Application Resolvers
 
-The Gqlgen package being used is based on a schema first approach. A time-saving feature of Gqlgen is its ability to generate your application’s resolvers based on your defined schema in the `schema.graphqls` file. With this feature, you do not need to manually write the resolver boilerplate code, all you need to do is to focus on the actual implementation of the defined resolvers.
+The Gqlgen package being used is based on a schema-first approach. A time-saving feature of Gqlgen is its ability to generate your application’s resolvers based on your defined schema in the `schema.graphqls` file. With this feature, you do not need to manually write the resolver boilerplate code, all you need to do is to focus on the actual implementation of the defined resolvers.
 
 To utilize the code generation feature, execute the command below from a terminal in the project directory to generate the GraphQL API model files and resolvers;
 
@@ -160,13 +160,13 @@ type queryResolver struct{ *Resolver }
 
 ```
 
-As defined in the `schema.graphqls` file, two mutations, and one query resolver functions where generated by Gqlgen's code generator. These resolvers would serve the following purposes;
+As defined in the `schema.graphqls` file, two mutations, and one query resolver function were generated by Gqlgen's code generator. These resolvers would serve the following purposes;
 
 * CreateUser - This would mutation resolver would be used to insert a new user record into the connected Postgres database.
 
-* UploadProfileImage - This mutation resolver would be used to upload a media file recieved from a [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/) and upload the file to a bucket within [Digitalocean Spaces](https://www.digitalocean.com/products/spaces/). After the file upload, an update would be made to insert the url of the uploaded file into the `img_uri` field of the previously created user.
+* UploadProfileImage - This mutation resolver would be used to upload a media file received from a [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/) and upload the file to a bucket within [Digitalocean Spaces](https://www.digitalocean.com/products/spaces/). After the file upload, an update would be made to insert the URL of the uploaded file into the `img_uri` field of the previously created user.
 
-*  Users - This query resolver would query the database for all exisiting users and return them as the query result.
+*  Users - This query resolver would query the database for all existing users and return them as the query result.
 
 Going through the functions generated from the Mutation and Query types, you would observe that they cause a [panic](https://golang.org/src/runtime/panic.go) with a "**not implemented**" error when executed. This indicates that they are still auto-generated boilerplate code. Later in this tutorial, we would come back to the `schema.resolver.go` file to implement these generated functions.
 
@@ -208,7 +208,7 @@ To connect to the newly created database within the cluster, you need a database
 
 Create a `db.go` file within the `graph` package directory. You would gradually put together the code within the file to establish a connection with the Postgres database created in the [Managed Databases](https://www.digitalocean.com/products/managed-databases/) cluster.
 
-First, add the content of the code block below into the `db.go` file to create a user table in the Postgres database immediately a connection to the database has been established.
+First, add the content of the code block below into the `db.go` file to create a user table in the Postgres database immediately after a connection to the database has been established.
 
 ```go
 [label server.go]
@@ -235,7 +235,7 @@ func createSchema(db *pg.DB) error {
 }
 ```
 
-Using the `IfNotExists` option passed to `CreateTable` method from [go-pg](https://github.com/go-pg/pg), the `createSchema` function in the code block above only inserts a new table into the database if the table does not exist. You can understand this process as a simplified form of seeding a newly created database, rather than creating the Tables manually through a command line client or GUI, the `createSchema` function takes care of the table creation.
+Using the `IfNotExists` option passed to the `CreateTable` method from [go-pg](https://github.com/go-pg/pg), the `createSchema` function in the code block above only inserts a new table into the database if the table does not exist. You can understand this process as a simplified form of seeding a newly created database, rather than creating the Tables manually through a command-line client or GUI, the `createSchema` function takes care of the table creation.
 
 Next, add the content of the code block below into the `db.go` file to establish a connection to the Postgres database and execute the `createSchema` function above when a connection has been established successfully.
 
@@ -273,7 +273,7 @@ func Connect() *pg.DB {
 
 The exported `Connect` function in the code block above when executed establishes a connection to a Postgres database using [go-pg](https://github.com/go-pg/pg) and returns the connection instance. This done through the following operations explained below;
 
-* First, the database credentials you stored in the root `.env` file are retrieved, then, a variable is created to store a string formatted with the retrieved credentials. This variable would be used as a connection URI when connecting with database.
+* First, the database credentials you stored in the root `.env` file are retrieved, then, a variable is created to store a string formatted with the retrieved credentials. This variable would be used as a connection URI when connecting with the database.
 
 * Next, the created connection string is parsed to know if the formatted credentials are valid. If valid, the connection string is passed into the `connect` method as an argument to establish a connection. 
 
@@ -355,7 +355,7 @@ Now a database connection would be established each time the entry `server.go` f
 
 #### Mutation Resolvers
 
-Going through the `schema.graphqls` file, there are only two mutation resolvers generated. One with the purpose of handling the user's creation, while the other to handle the profile image uploads.
+Going through the `schema.graphqls` file, there are only two mutation resolvers generated. One with the purpose of handling the user's creation, while the other handles the profile image uploads.
 
 Modify the `CreateUser` mutation with the code snippet below to insert a new row containing the user details input into the database
 
@@ -416,7 +416,7 @@ mutation createUser {
 }
 ```
 
-![A create user muation on the GraphQL Playround](https://i.imgur.com/57Q16Ir.png)
+![A create user mutation on the GraphQL Playround](https://i.imgur.com/57Q16Ir.png)
 
 Going through the image above, you executed the `CreateUser` mutation to create a test user with the name of **John Doe**, and you returned the `id` of the newly inserted user record as the result of the mutation. 
 
@@ -426,7 +426,7 @@ At this point, you have the second `UploadProfileImage` mutation resolver functi
 
 As defined in the `schema.graphqls` file, one query resolver was generated for the purpose of retrieving all created users.
 
-Modify the generated `Users` query resolver with the code block below to query the postgres database for all user rows. 
+Modify the generated `Users` query resolver with the code block below to query the Postgres database for all user rows. 
 
 
 ```go
@@ -452,9 +452,9 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 }
 ```
 
-Within the `Users` reswolver function above, fetching all users record is made possible by using go-pg’s `select` method on the `User` model without passing `WHERE` or `LIMIT` clause into the query.
+Within the `Users` resolver function above, fetching all records within the user table is made possible by using go-pg’s `select` method on the `User` model without passing `WHERE` or `LIMIT` clause into the query.
 
-To test this query resolver from your browser, navigate to `http://localhost:8080` to access the GraphQL playground. Paste the GraphQL Query below into the playground editor to fetch all created user record.
+To test this query resolver from your browser, navigate to `http://localhost:8080` to access the GraphQL playground. Paste the GraphQL Query below into the playground editor to fetch all created user records.
 
 ```graphql
 [label graphql]
@@ -472,17 +472,17 @@ query getUsers {
 
 
 
-Going through the right side of the image above, you would notice that a `users` object having an array value was returned. For now only the previously created user was returned in the `users` array because that it is the only record in the table. More users would be returned in the `users` array if you execute the previous Mutation with new user values.
+Going through the right side of the image above, you would notice that a `users` object having an array value was returned. For now, only the previously created user was returned in the `users` array because that it is the only record in the table. More users would be returned in the `users` array if you execute the previous Mutation with new user values.
 
-At this point, you have now implemented both the `CreateUser` mutation and the `User` query. Everything is in place for you to implement recieving images from the second `UploadProfileImage` resolver and uploading the recieved image to a bucket with Digitalocean Spaces through the use of an S3 compatible [AWS-GO](https://docs.aws.amazon.com/sdk-for-go/api/) SDK.
+At this point, you have now implemented both the `CreateUser` mutation and the `User` query. Everything is in place for you to implement receiving images from the second `UploadProfileImage` resolver and uploading the received image to a bucket with Digitalocean Spaces through the use of an S3 compatible [AWS-GO](https://docs.aws.amazon.com/sdk-for-go/api/) SDK.
 
 ## Step 5 — Uploading Images To Digitalocean Spaces
 
-[Spaces](https://www.digitalocean.com/products/spaces/) is a simple, and scalable cloud based object storage service from Digitalocean. You would use the powerful API within the second `UploadProfileImage` mutation to upload images.
+[Spaces](https://www.digitalocean.com/products/spaces/) is a simple, and scalable cloud-based object storage service from Digitalocean. You would use the powerful API within the second `UploadProfileImage` mutation to upload images.
 
 To begin, navigate to the Spaces section of your DigitalOcean console where you would create a new bucket for storing the uploaded files from your backend application.
 
-Click the **Create New Space** button, leaving other settings at their default values and specify a unique name for the new space as shown below before creating your new space;
+Click the **Create New Space** button, leaving other settings at their default values, and specify a unique name for the new space as shown below before creating your new space;
 
 ![Digitalocean spaces](https://i.imgur.com/Aifnmzf.png)
 
@@ -495,7 +495,7 @@ SPACE_ENDPOINT=<BUCKET_ENDPOINT>
 ```
 
 
-Next, using [this guide](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#acwithin the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend applicationcess-keys) within the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend application. After creating them, copy the values and store them in your backend application’s `.env` file in the format below;
+Next, using [this guide](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#acwithin the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the API access-keys) within the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend application. After creating them, copy the values and store them in your backend application’s `.env` file in the format below;
 
 
 ```bash
@@ -508,7 +508,7 @@ One way to programmatically perform operations on your bucket within [Spaces](ht
 
 To implement the file uploads, modify the `UploadProfileImage` mutation function within the `Schema.resolvers.go` file with the code below which uploads an image from the resolver function into our Digitalocean Spaces bucket.
 
-Using the next few code snippets, you would gradualy put together the upload logic in the `UploadProfileImage` mutation resolver.
+Using the next few code snippets, you would gradually put together the upload logic in the `UploadProfileImage` mutation resolver.
 
 First, add the code snippet below to create a session using the `aws-sdk-go` with your bucket within the Spaces service using the `access_key` and `secret_key` credentials you stored in the `.env` file.
 
@@ -554,9 +554,9 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 
 With the SDK configured, the next line of action is to upload the file sent in the [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/).
 
-A way to handle files sent is to read the content from the [multipart request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/), temporaily save the content to a new file in memory, then upload the tempoary file using the `aws-sdk-go` library, then delete it after an upload. 
+A way to handle files sent is to read the content from the [multipart request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/), temporarily save the content to a new file in memory, then upload the temporary file using the `aws-SDK-go` library, then delete it after an upload. 
 
-To achieve this, add the content of code block below to the existing code into the `UploadProfileImage` mutation resolver.
+To achieve this, add the content of the code block below to the existing code into the `UploadProfileImage` mutation resolver.
 
 ```go
 [label schema.resolvers.go]
@@ -622,13 +622,13 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 
 Using the [ReadAll](https://golang.org/pkg/io/#ReadAll) method from the [io](https://golang.org/pkg/io/) package in the code block above, you read the content of the file added to the multipart request sent to the GraphQL API, then a temporary file was created to dump this content into.
 
-Next, using the [PutObjectInput](https://docs.aws.amazon.com/sdk-for-go/api/service/s3/#PutObjectInput) struct we created the structure of the file to be uploaded by specifying the `Bucket`, `Key`, `ACL` and `Body` field to be content of the tempoarily stored file.   
+Next, using the [PutObjectInput](https://docs.aws.amazon.com/sdk-for-go/api/service/s3/#PutObjectInput) struct we created the structure of the file to be uploaded by specifying the `Bucket`, `Key`, `ACL` and `Body` field to be content of the temporarily stored file.   
 
 <$>[note]
 **Note:** The [Access Control List](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html) (ACL) field in the `PutObjectInput` struct has a `public-read` value to make all uploaded files available for viewing over the internet.
 <$>
 
-After creating the `PutObjectInput` struct, the `PutObject` method is used to make a `PUT` operation, sending the deferenced values of the `PutObjectInput` struct to the bucket. If there is an error, a false boolean value and an error message is returned, ending the execution of the resolver function and the mutation in general.     
+After creating the `PutObjectInput` struct, the `PutObject` method is used to make a `PUT` operation, sending the de-ferenced values of the `PutObjectInput` struct to the bucket. If there is an error, a false boolean value and an error message are returned, ending the execution of the resolver function and the mutation in general.     
 
 To test the upload implementation in the mutation resolver, execute the command below to make an HTTP request to the GraphQL API using cURL, adding an image into the request form body.
 
@@ -648,7 +648,7 @@ Going through your created bucket within the Spaces section of the Digitalocean 
 
 ![A bucket within Digitalocean showing a list of uploaded files](https://i.imgur.com/o4f5P7N.png)
 
-At this point, file uploads within the application are working, however the files are not getting linked back to user who performed the upload. The requirement of each file upload performed through this API is to have the file uploaded into a storage bucket, and then linked back to a user by updating the `img_uri` field of the user. 
+At this point, file uploads within the application are working, however, the files are not getting linked back to the user who performed the upload. The requirement of each file upload performed through this API is to have the file uploaded into a storage bucket and then linked back to a user by updating the `img_uri` field of the user. 
 
 To achieve this, add the code block below into the `resolvers.go` file in the graph directory. It contains two helper functions, one to retrieve a user from the database by a specified field, and the other function to update the record of a user.
 
@@ -672,9 +672,9 @@ func (r *mutationResolver) UpdateUser(user *model.User) (*model.User, error) {
 
 The first `GetUserByField` function above accepts a `field` and `value` argument, both being of a string type. Using go-pg's ORM, it executes a query on the database, fetching data from the user table with a `WHERE` clause.
 
-The second `UpdateUser` function in the code block uses go-pg to execute a `UPDATE` statement to update a record in the user table. Using the where method attached, it adds a where clause to the `UPDATE` statement to only update the row having the same `ID` passed into the function.
+The second `UpdateUser` function in the code block uses go-pg to execute an `UPDATE` statement to update a record in the user table. Using the where method attached, a `WHERE` clause with a condition is added to the `UPDATE` statement to update only the row having the same `ID` passed into the function.
 
-Now you can use the two helper functions in the `UploadProfileImage` mutation. Add the content of the code block below to retrieve a specific row from the user table and update the `img_uri` field in the user's record after the file has been uploaded.
+Now you can make use of the two helper functions in the `UploadProfileImage` mutation. Add the content of the code block below to retrieve a specific row from the user table, and update the `img_uri` field in the user's record after the file has been uploaded.
 
 ```go
 [label schema.resolvers.go]
@@ -717,9 +717,9 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 }
 ```
 
-From the new code added to the `schema.resolvers.go` file, an `ID` string and the user's ID is passed to the `GetUserByField` helper function to retrieve the record of the user executing the mutation. 
+From the new code added to the `schema.resolvers.go` file, an `ID` string and the user's ID are passed to the `GetUserByField` helper function to retrieve the record of the user executing the mutation. 
 
-A new variable is then created and given the value of a string formatted to have the link of the recently uploaded file in the format of `https://<BUCKET_NAME>.<SPACE_REGION>.digitaloceanspaces.com/<USER_ID>-<FILE_NAME>`. The `ImgURI` field in the retrieved user model is then reassigned the formatted string as the link to the uploaded file. 
+A new variable is then created and given the value of a string formatted to have the link of the recently uploaded file in the format of `https://<BUCKET_NAME>.<SPACE_REGION>.digitaloceanspaces.com/<USER_ID>-<FILE_NAME>`. The `ImgURI` field in the retrieved user model was reassigned the value of the formatted string as a link to the uploaded file. 
 
 Execute the command below to test the user record update within the `UploadProfileImage` mutation by making a POST request having an image in the form body to the GraphQL API endpoint. 
 
@@ -734,13 +734,13 @@ After the request has been made, you would get a response similar to the first o
 {"data": { "uploadProfileImage": true }}
 ```
 
-To further confirm that the user's `ImgUrl` was updated, you can use the `getUser` query from the GraphQL playground in the browser to retrieve the user's detail. If the update in the previous mutation was successful, you would observe that the default placeholder url of `https://bit.ly/3mCSn2i` has been updated to point to an actual image uploaded by the user.
+To further confirm that the user's `ImgUrl` was updated, you can use the `getUser` query from the GraphQL playground in the browser to retrieve the user's detail. If the update in the previous mutation was successful, you would observe that the default placeholder URL of `https://bit.ly/3mCSn2i` has been updated to point to an actual image uploaded by the user.
 
-![A query mutation to retrieve a updated user record using the GraphQL Playground](https://i.imgur.com/WPLxxm7.png)
+![A query mutation to retrieve an updated user record using the GraphQL Playground](https://i.imgur.com/WPLxxm7.png)
 
-From the image above, you would notice `img_uri` in the first user object returned from the query has a value that corresponds to a file upload to a bucket within Digitalocean Spaces. The link in the `img_uri`  field is made up of the bucket endpoint, the user's ID and lastly the filename.  
+From the image above, you would notice `img_uri` in the first user object returned from the query has a value that corresponds to a file upload to a bucket within Digitalocean Spaces. The link in the `img_uri`  field is made up of the bucket endpoint, the user's ID, and lastly the filename.  
 
-To test the permission of the uploaded file set through the ACL option, you can open the `img_uri` link in your browser. You should be able to view exact image uploaded when you made the POST request using cURL from your terminal.
+To test the permission of the uploaded file set through the ACL option, you can open the `img_uri` link in your browser. You should be able to view the exact image uploaded when you made the POST request using cURL from your terminal.
 
 ![Browser view of the uploaded file](https://i.imgur.com/hMTexa1.png)
 
@@ -748,10 +748,10 @@ The image above shows exactly the same image that was uploaded from the command 
 
 ### Deploying The GraphQL API to App Platform
 <$>[info]
-**Info:**  [App platform](https://www.digitalocean.com/products/app-platform/) is a Digitalocean service product that makes it much easier to build, deploy, and even auto scale your applications. [App platform](https://www.digitalocean.com/products/app-platform/) supports a variety of languages and within this article, you would utilize the support for applications written in Go and stored within [GitHub](https://github.com).
+**Info:**  [App platform](https://www.digitalocean.com/products/app-platform/) is a Digitalocean service product that makes it much easier to build, deploy, and even auto-scale your applications. [App platform](https://www.digitalocean.com/products/app-platform/) supports a variety of languages and within this article, you would utilize the support for applications written in Go and stored within [GitHub](https://github.com).
 <$>
 
-To begin depoying your backend application, create a local git repository by executing the command below from a terminal;
+To begin deploying your backend application, create a local git repository by executing the command below from a terminal;
 
 ```command
  git init
