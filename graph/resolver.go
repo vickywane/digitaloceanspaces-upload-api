@@ -10,7 +10,7 @@ type Resolver struct{
 	DB *pg.DB
 }
 
-func (r *mutationResolver) GetUserField(field, value string) (*model.User, error) {
+func (r *mutationResolver) GetUserByField(field, value string) (*model.User, error) {
 	user := model.User{}
 
 	err := r.DB.Model(&user).Where(fmt.Sprintf("%v = ?", field), value).First()

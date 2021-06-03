@@ -48,12 +48,6 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 	key := os.Getenv("ACCESS_KEY")
 	secret := os.Getenv("ACCESS_SECRET")
 
-	user, userErr := r.GetUserField("ID", *input.UserID)
-
-	if userErr != nil {
-		return false, fmt.Errorf("error getting user: %v", userErr)
-	}
-
 	s3Config := &aws.Config{
 		Credentials: credentials.NewStaticCredentials(key, secret, ""),
 		Endpoint:    aws.String(fmt.Sprintf("https://%v.digitaloceanspaces.com", SpaceRegion)),
@@ -82,7 +76,7 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 
 	buffer := make([]byte, input.File.Size)
 
-	file.Read(buffer)
+	_, _ = file.Read(buffer)
 
 	fileBytes := bytes.NewReader(buffer)
 
@@ -97,11 +91,18 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 		return false, fmt.Errorf("error uploading file: %v", uploadErr)
 	}
 
-	os.Remove("image.png")
+	_ = os.Remove("image.png")
+
+	user, userErr := r.GetUserByField("ID", *input.UserID)
+
+	if userErr != nil {
+		return false, fmt.Errorf("error getting user: %v", userErr)
+	}
+
 	user.ImgURI = fmt.Sprintf("https://%v.%v.digitaloceanspaces.com/%v-%v", SpaceName, SpaceRegion, *input.UserID, input.File.Filename)
 
  	if _, err := r.UpdateUser(user); err != nil {
-		return false, fmt.Errorf("Err updating user: %v", err)
+		return false, fmt.Errorf("err updating user: %v", err)
 	}
 
 	return true, nil
@@ -110,7 +111,7 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	var users []*model.User
 
-	r.DB.Model(&users).Select()
+	_ = r.DB.Model(&users).Select()
 
 	return users, nil
 }
