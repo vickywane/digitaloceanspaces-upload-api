@@ -5,9 +5,11 @@
 
 The ability of a user to upload their personal files when using an application is often considered a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design in your client application.
 
-In this article, you would build a GraphQL API using Golang that has the ability to receive a media file from a [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/) and upload the file to a bucket within [Digitalocean Spaces](https://www.digitalocean.com/products/spaces/).
+As you follow through the steps in this article, you would learn about the [Spaces](https://www.digitalocean.com/products/spaces/), and [Managed Databases](https://www.digitalocean.com/products/managed-databases/) services from [Digitalocean](https://www.digitalocean.com) and how you can programmatically upload files to a created bucket from a Golang Application using an S3-compatible [AWS-GO](https://docs.aws.amazon.com/sdk-for-go/api/) SDK.
 
-As you follow through the steps in this article, you would learn about the [Spaces](https://www.digitalocean.com/products/spaces/), and [Managed Databases](https://www.digitalocean.com/products/managed-databases/) products from [Digitalocean](https://www.digitalocean.com) and how you can programmatically upload files to a created bucket from a Golang Application using an S3-compatible [AWS-GO](https://docs.aws.amazon.com/sdk-for-go/api/) SDK.
+By the end of this tutorial, you would have built a GraphQL API using Golang that has the ability to receive a media file from a [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/) and upload the file to a bucket within [Digitalocean Spaces](https://www.digitalocean.com/products/spaces/) as shown in the high level diagram below: 
+
+![High level diagram of GraphQL upload API](https://i.imgur.com/v3rbTaO.png)
 
 ## Prerequisites
 
@@ -195,11 +197,11 @@ Create a `.env` file within the root directory of the GraphQL-API project to sec
 ```bash
 [label .env]
 
- DB_PASSWORD=<PASSWORD>
- DB_PORT=<PORT>
- DB_NAME=<DATABASE>
- DB_ADDR=<HOST>
- DB_USER=<USERNAME>
+ DB_PASSWORD=<^><PASSWORD><^>
+ DB_PORT=<^><PORT><^>
+ DB_NAME=<^><DATABASE><^>
+ DB_ADDR=<^><HOST><^>
+ DB_USER=<^><USERNAME><^>
 ```
 
 With the connection details securely stored in the .env file above, the next step would be to connect to the database cluster through our backend application.
@@ -459,20 +461,18 @@ To test this query resolver from your browser, navigate to `http://localhost:808
 ```graphql
 [label graphql]
 
-query getUsers {
+query fetchUsers {
   users {
-      email
       fulName
-      dateCreated
       id
       img_uri
   }
 }
 ```
 
+![Query result GraphQL playground](https://i.imgur.com/RWh2Cmv.png)
 
-
-Going through the right side of the image above, you would notice that a `users` object having an array value was returned. For now, only the previously created user was returned in the `users` array because that it is the only record in the table. More users would be returned in the `users` array if you execute the previous Mutation with new user values.
+Going through the right side of the image above, you would notice that a `users` object having an array value was returned. For now, only the previously created user was returned in the `users` array because that it is the only record in the table. More users would be returned in the `users` array if you execute the previous Mutation with new user values. You would also observe that the `img_uri` field in the first object has the hardcoded fallback image URL.
 
 At this point, you have now implemented both the `CreateUser` mutation and the `User` query. Everything is in place for you to implement receiving images from the second `UploadProfileImage` resolver and uploading the received image to a bucket with Digitalocean Spaces through the use of an S3 compatible [AWS-GO](https://docs.aws.amazon.com/sdk-for-go/api/) SDK.
 
@@ -491,7 +491,7 @@ After a new Space has been created, navigate to the settings tab and copy the sp
 
 ```bash
 [label .env]
-SPACE_ENDPOINT=<BUCKET_ENDPOINT>
+SPACE_ENDPOINT=<^><BUCKET_ENDPOINT><^>
 ```
 
 
@@ -500,17 +500,15 @@ Next, using [this guide](https://docs.digitalocean.com/products/spaces/how-to/ma
 
 ```bash
 [label .env]
-ACCESS_KEY=<SPACE_ACCESS_KEY>
-SECRET_KEY=<SPACE_SECRET_KEY>
+ACCESS_KEY=<^><SPACE_ACCESS_KEY><^>
+SECRET_KEY=<^><SPACE_SECRET_KEY><^>
 ```
 
-One way to programmatically perform operations on your bucket within [Spaces](https://www.digitalocean.com/products/spaces/) is through the use of supported AWS SDKs as they are compatible. The Digitalocean Spaces [documentation](https://docs.digitalocean.com/products/spaces/) provides a list of operations you can perform on the Spaces API using an AWS SDK.
-
-To implement the file uploads, modify the `UploadProfileImage` mutation function within the `Schema.resolvers.go` file with the code below which uploads an image from the resolver function into our Digitalocean Spaces bucket.
+One way to programmatically perform operations on your bucket within [Spaces](https://www.digitalocean.com/products/spaces/) is through the use of compatible AWS SDKs. The Digitalocean Spaces [documentation](https://docs.digitalocean.com/products/spaces/) provides a list of operations you can perform on the Spaces API using an AWS SDK.
 
 Using the next few code snippets, you would gradually put together the upload logic in the `UploadProfileImage` mutation resolver.
 
-First, add the code snippet below to create a session using the `aws-sdk-go` with your bucket within the Spaces service using the `access_key` and `secret_key` credentials you stored in the `.env` file.
+First, add the code highlighted in the preceding code block into the `schema.resolvers/go` file to create a configure and create a session from Spaces to the local `aws-sdk-go` SDK using the `access_key` and `secret_key` credentials you stored in the `.env` file.
 
 ```go
 [label schema.resolvers.go]
@@ -533,30 +531,31 @@ import (
 )
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
-
-  SpaceName := os.Getenv("DO_SPACE_NAME")
-	SpaceRegion := os.Getenv("DO_SPACE_REGION")
-	key := os.Getenv("ACCESS_KEY")
-	secret := os.Getenv("ACCESS_SECRET")
-
-	s3Config := &aws.Config{
-		Credentials: credentials.NewStaticCredentials(key, secret, ""),
-		Endpoint:    aws.String(fmt.Sprintf("https://%v.digitaloceanspaces.com", SpaceRegion)),
-		Region:      aws.String(SpaceRegion),
-	}
-
-	newSession := session.New(s3Config)
-	s3Client := s3.New(newSession)
-
+<^><^>
+<^>  SpaceName := os.Getenv("DO_SPACE_NAME")<^>
+<^>	SpaceRegion := os.Getenv("DO_SPACE_REGION")<^>
+<^>	key := os.Getenv("ACCESS_KEY")<^>
+<^>	secret := os.Getenv("ACCESS_SECRET")<^>
+<^><^>
+<^>	s3Config := &aws.Config{<^>
+<^>		Credentials: credentials.NewStaticCredentials(key, secret, ""),<^>
+<^>		Endpoint:    aws.String(fmt.Sprintf("https://%v.digitaloceanspaces.com", SpaceRegion)),<^>
+<^>		Region:      aws.String(SpaceRegion),<^>
+<^>	}<^>
+<^><^>
+<^>	newSession := session.New(s3Config)<^>
+<^>	s3Client := s3.New(newSession)<^>
+<^><^>
+ 
 	return true, nil
 }
 ```
 
-With the SDK configured, the next line of action is to upload the file sent in the [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/).
+With the SDK configured above, the next line of action is to upload the file sent in the [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/).
 
 A way to handle files sent is to read the content from the [multipart request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/), temporarily save the content to a new file in memory, then upload the temporary file using the `aws-SDK-go` library, then delete it after an upload. 
 
-To achieve this, add the content of the code block below to the existing code into the `UploadProfileImage` mutation resolver.
+To achieve this, add the content of the highlighted Go code below to the existing code within the `UploadProfileImage` mutation resolver in the `schema.resolvers.go`.
 
 ```go
 [label schema.resolvers.go]
@@ -580,42 +579,42 @@ import (
 )
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
+ <^><^>
+<^>  userFileName := fmt.Sprintf("%v-img.png", input.UserID)<^>
+<^>  stream, readErr := ioutil.ReadAll(input.File.File)<^>
+<^>	if readErr != nil {<^>
+<^>		fmt.Printf("error from file %v", readErr)<^>
+<^>	}<^>
+<^><^>
+<^>	fileErr := ioutil.WriteFile(userFileName, stream, 0644)<^>
+<^>		fmt.Printf("file err %v", fileErr)<^>
+<^>	}<^>
+<^><^>
+<^>	file, openErr := os.Open(userFileName)<^>
+<^>	if openErr != nil {<^>
+<^>		fmt.Printf("Error opening file: %v", openErr)<^>
+<^>	}<^>
+<^><^>
+<^>	defer file.Close()<^>
+<^><^>
+<^>	buffer := make([]byte, input.File.Size)<^>
+<^><^>
+<^>	fileBytes := bytes.NewReader(buffer)<^>
+<^><^>
+<^>	object := s3.PutObjectInput{<^>
+<^>		Bucket: aws.String(SpaceName),<^>
+<^>		Key:    aws.String(fmt.Sprintf("%v-%v", *input.UserID, input.File.Filename)),<^>
+<^>		Body:   fileBytes,<^>
+<^>		ACL:    aws.String("public-read"),<^>
+<^>	}<^>
+<^><^>
+<^>	if _, uploadErr := s3Client.PutObject(&object); uploadErr != nil {<^>
+<^>		return false, fmt.Errorf("error uploading file: %v", uploadErr)<^>
+<^>	}<^>
+<^><^>
+<^>	_ = os.Remove(userFileName)<^>
 
-  userFileName := fmt.Sprintf("%v-img.png", input.UserID)
-  stream, readErr := ioutil.ReadAll(input.File.File)
-	if readErr != nil {
-		fmt.Printf("error from file %v", readErr)
-	}
-
-	fileErr := ioutil.WriteFile(userFileName, stream, 0644)
-	if fileErr != nil {
-		fmt.Printf("file err %v", fileErr)
-	}
-
-	file, openErr := os.Open(userFileName)
-	if openErr != nil {
-		fmt.Printf("Error opening file: %v", openErr)
-	}
-
-	defer file.Close()
-
-	buffer := make([]byte, input.File.Size)
-
-	fileBytes := bytes.NewReader(buffer)
-
-	object := s3.PutObjectInput{
-		Bucket: aws.String(SpaceName),
-		Key:    aws.String(fmt.Sprintf("%v-%v", *input.UserID, input.File.Filename)),
-		Body:   fileBytes,
-		ACL:    aws.String("public-read"),
-	}
-
-	if _, uploadErr := s3Client.PutObject(&object); uploadErr != nil {
-		return false, fmt.Errorf("error uploading file: %v", uploadErr)
-	}
-
-	_ = os.Remove(userFileName)
-
+ 
 	return true, nil
 }
 ```
@@ -636,7 +635,7 @@ To test the upload implementation in the mutation resolver, execute the command 
 curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImage($image: Upload! $userId : String!) { uploadProfileImage(input: { file: $image  userId : $userId}) }", "variables": { "image": null, "userId" : "121212" } }' -F map='{ "0": ["variables.image"] }'  -F 0=@sample.jpeg
 ```
 
-After the file has been uploaded, the following boolean status would be printed out in the terminal as the request-response, indicating that the file upload was successful.
+After the command above has been executed to upload a file, the following stringified data would be printed out in the terminal as the request's response, indicating that the file upload was successful.
 
 
 ```
@@ -650,9 +649,10 @@ Going through your created bucket within the Spaces section of the Digitalocean 
 
 At this point, file uploads within the application are working, however, the files are not getting linked back to the user who performed the upload. The requirement of each file upload performed through this API is to have the file uploaded into a storage bucket and then linked back to a user by updating the `img_uri` field of the user. 
 
-To achieve this, add the code block below into the `resolvers.go` file in the graph directory. It contains two helper functions, one to retrieve a user from the database by a specified field, and the other function to update the record of a user.
+Add the content of the code block below into the `resolvers.go` file in the graph directory. It contains two helper functions, one to retrieve a user from the database by a specified field, and the other function to update the record of a user.
 
 ```go
+[label resolvers.go]
 
 func (r *mutationResolver) GetUserByField(field, value string) (*model.User, error) {
 	user := model.User{}
@@ -674,7 +674,7 @@ The first `GetUserByField` function above accepts a `field` and `value` argument
 
 The second `UpdateUser` function in the code block uses go-pg to execute an `UPDATE` statement to update a record in the user table. Using the where method attached, a `WHERE` clause with a condition is added to the `UPDATE` statement to update only the row having the same `ID` passed into the function.
 
-Now you can make use of the two helper functions in the `UploadProfileImage` mutation. Add the content of the code block below to retrieve a specific row from the user table, and update the `img_uri` field in the user's record after the file has been uploaded.
+Now you can make use of the two helper functions in the `UploadProfileImage` mutation. Add the content of the highlighted code block below to retrieve a specific row from the user table, and update the `img_uri` field in the user's record after the file has been uploaded.
 
 ```go
 [label schema.resolvers.go]
@@ -698,20 +698,21 @@ import (
 )
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
-
- user, userErr := r.GetUserByField("ID", *input.UserID)
-
-	if userErr != nil {
-		return false, fmt.Errorf("error getting user: %v", userErr)
-	}
-
-  fileUrl := fmt.Sprintf("https://%v.%v.digitaloceanspaces.com/%v-%v", SpaceName, SpaceRegion, *input.UserID, input.File.Filename)
-
-	user.ImgURI = fileUrl
-
- 	if _, err := r.UpdateUser(user); err != nil {
-		return false, fmt.Errorf("err updating user: %v", err)
-	}
+ <^><^>
+<^>  user, userErr := r.GetUserByField("ID", *input.UserID)<^>
+<^><^>
+<^>	if userErr != nil {<^>
+<^>		return false, fmt.Errorf("error getting user: %v", userErr)<^>
+<^>	}<^>
+<^><^>
+<^> fileUrl := fmt.Sprintf("https://%v.%v.digitaloceanspaces.com/%v-%v", SpaceName, SpaceRegion, *input.UserID, input.File.Filename)<^>
+<^><^>
+<^>	user.ImgURI = fileUrl<^>
+<^><^>
+<^> 	if _, err := r.UpdateUser(user); err != nil {<^>
+<^>		return false, fmt.Errorf("err updating user: %v", err)<^>
+<^>	}<^>
+ 
 
 	return true, nil
 }
@@ -747,6 +748,7 @@ To test the permission of the uploaded file set through the ACL option, you can 
 The image above shows exactly the same image that was uploaded from the command line, indicating that the helper functions were executed correctly and the entire file upload logic in the `UploadProfileImage` mutation works as expected.
 
 ### Deploying The GraphQL API to App Platform
+
 <$>[info]
 **Info:**  [App platform](https://www.digitalocean.com/products/app-platform/) is a Digitalocean service product that makes it much easier to build, deploy, and even auto-scale your applications. [App platform](https://www.digitalocean.com/products/app-platform/) supports a variety of languages and within this article, you would utilize the support for applications written in Go and stored within [GitHub](https://github.com).
 <$>
@@ -792,6 +794,7 @@ At this point, the application has been fully deployed to the [App Platform](htt
 
 
 Take note of the endpoint URL of your deployed application placed below the application name. you would use this endpoint to test the upload feature implemented in the deployed GraphQL API with [Postman](https://www.postman.com/) as an API testing tool.
+
 
 <$>[info]
 **Note:** If you do not have the Postman Desktop App installed on your local machine, you can make use of the Postman Web Client within your browser.
