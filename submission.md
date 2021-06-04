@@ -494,9 +494,25 @@ After a new Space has been created, navigate to the settings tab and copy the sp
 SPACE_ENDPOINT=<^><BUCKET_ENDPOINT><^>
 ```
 
+One last thing to do before leaving the Digitalocean console is to generate an Access Key and an Access Secret for use within the GraphQL Application. 
 
-Next, using [this guide](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#acwithin the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the API access-keys) within the Digitalocean Spaces documentation that explains the process of creating secret and access keys, create a secret and access key for the backend application. After creating them, copy the values and store them in your backend application’s `.env` file in the format below;
+<$>[info]
+**Info:**  
 
+An [access key](https://docs.digitalocean.com/products/spaces/how-to/manage-access/#acwithin) is used to authenticate an operation on a selected Digitalocean service either through a supported SDK or API. An a 
+<$>
+
+From the API section of your Digitalocean console, click the right positioned **Generate New Key** grey button to generate a new key, inputing a unique name into the **Name** text field to identify who and what this key is for. An example name is `UPLOADS_ACCESS_KEY`.
+
+After saving the access key, an access secret to be used alongside the access key would be automatically generated as shown below: 
+
+![Digitalocean Administrative Access](https://i.imgur.com/yy0Tdf0.png)
+
+<$>[warning]
+**Warning:**  Do not copy the access credentials shown in the image above as they were generated only for demo purposes, and have been deleted.
+<$>
+
+Copy the access and secret keys you generated into the `.env` file within the GraphQL application in the following format: 
 
 ```bash
 [label .env]
@@ -788,7 +804,7 @@ Leaving other settings at their defaults, click the **Next** button to move to t
 
 ### Step 6 — Testing The Deployed GraphQL Endpoint
 
-At this point, the application has been fully deployed to the [App Platform](https://www.digitalocean.com/products/app-platform/), with a healthy running status similar to the one shown in the image below;
+At this point, the application has been fully deployed to the [App Platform](https://www.digitalocean.com/products/app-platform/), with a healthy running status similar to the example application shown in the image below;
 
 ![Health status of a Golang application deployed to Digitalocean App Platform](https://i.imgur.com/Nbjeph7.png)
 
@@ -796,24 +812,22 @@ At this point, the application has been fully deployed to the [App Platform](htt
 Take note of the endpoint URL of your deployed application placed below the application name. you would use this endpoint to test the upload feature implemented in the deployed GraphQL API with [Postman](https://www.postman.com/) as an API testing tool.
 
 
-<$>[info]
+<$>[note]
 **Note:** If you do not have the Postman Desktop App installed on your local machine, you can make use of the Postman Web Client within your browser.
 <$>
 
 From your Postman collection, create a new POST request with a form-data body having the following keys;
 
-<$>[info]
-**Note**: You should replace the USER_ID placeholder with the ID of a user you created using the `CreateUser` mutation. You would also need to change the file field below to a file type before you can select a file on your machine.
-<$>
-
-
 *   operations: [{"key":"operations","value":"{\"query\": \"mutation uploadImage($userID: String! $image: Upload!) {\\n uploadProfileImage(input: { userId: $userID file: $image }
 *   map: {"file": ["variables.image"], "userId": ["variables.userID"]}
-*   userId: &lt;USER_ID>
-*   file: &lt;LOCAL_FILE>
+*   userId: <^><USER_ID><^>
+*   file: <^><LOCAL_FILE><^>
+
+<$>[note]
+**Note**: You should replace the <^>USER_ID<^> placeholder with the ID of a user you created using the `CreateUser` mutation. You would also need to select the **file type** in the format dropdown list before you can select a file on your machine to be used in the file field.
+<$>
 
 ![Using Postman Form-Body to add images to a POST request using a GraphQL API](https://i.imgur.com/fOj229w.png)
-
 
 Hit the Send button to send the POST request, then reload your Digitalocean Space bucket to see your newly uploaded file.
 
