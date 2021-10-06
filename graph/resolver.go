@@ -2,7 +2,7 @@ package graph
 
 import (
 	"fmt"
-	"github.com/go-pg/pg/v9"
+	"github.com/go-pg/pg/v10"
 	"github.com/vickywane/api/graph/model"
 )
 

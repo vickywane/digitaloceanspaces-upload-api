@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.1.4
 	github.com/aws/aws-sdk-go-v2/credentials v1.1.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.4.0
-	github.com/go-pg/pg/v9 v9.2.0
+	github.com/go-pg/pg/v10 v10.10.6
 	github.com/joho/godotenv v1.3.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/vektah/gqlparser/v2 v2.1.0

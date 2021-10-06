@@ -3,7 +3,7 @@
 
 ### Introduction
 
-The ability of a user to upload their personal files when using an application is often considered a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design in your client application.
+The ability of a user to upload files when using an application is often considered a needed feature. However, when using a GraphQL API, this feature could become a challenge to implement, especially with GraphQL’s single source of truth design in your client application.
 
 As you follow through the steps in this article, you would learn about the [Spaces](https://www.digitalocean.com/products/spaces/), and [Managed Databases](https://www.digitalocean.com/products/managed-databases/) services from [Digitalocean](https://www.digitalocean.com) and how you can programmatically upload files to a created bucket from a Golang Application using an S3-compatible [AWS-GO](https://docs.aws.amazon.com/sdk-for-go/api/) SDK.
 
@@ -15,13 +15,15 @@ By the end of this tutorial, you would have built a GraphQL API using Golang tha
 
 To get the best out of this article, you would need the following;
 
--  Basic knowledge of [Golang](https://golang.org/). If you are new to Golang, the [How To Write Your First Program In Go](https://www.digitalocean.com/community/tutorials/how-to-write-your-first-program-in-go) article practically explains the Golang Programming Language and the [How To Code in Go](https://www.digitalocean.com/community/tutorial_series/how-to-code-in-go) series contains articles explaining how to configure a [MacOS](https://www.digitalocean.com/community/tutorials/how-to-install-go-and-set-up-a-local-programming-environment-on-macos), [Linux](https://www.digitalocean.com/community/tutorials/how-to-install-go-and-set-up-a-local-programming-environment-on-ubuntu-18-04), and [Windows](https://www.digitalocean.com/community/tutorials/how-to-install-go-and-set-up-a-local-programming-environment-on-windows-10) computer for building Golang applications.
+- A local installation the [Go](https://golang.org/) compiler on your computer. Go version [1.17.1](https://golang.org/doc/go1.17) was used to prepare this tutorial.
 
--   An understanding of [GraphQL](https://graphql.org/). Although the GraphQL terminologies used in this article are explained, the [Introduction To GraphQL](https://www.digitalocean.com/community/conceptual_articles/an-introduction-to-graphql) article gives a deeper introduction into what GraphQL APIs are all about.
+- Basic knowledge of [Golang](https://golang.org/). If you are new to Golang, the [How To Write Your First Program In Go](https://www.digitalocean.com/community/tutorials/how-to-write-your-first-program-in-go) article practically explains the Golang Programming Language and the [How To Code in Go](https://www.digitalocean.com/community/tutorial_series/how-to-code-in-go) series contains articles explaining how to configure a [MacOS](https://www.digitalocean.com/community/tutorials/how-to-install-go-and-set-up-a-local-programming-environment-on-macos), [Linux](https://www.digitalocean.com/community/tutorials/how-to-install-go-and-set-up-a-local-programming-environment-on-ubuntu-18-04), and [Windows](https://www.digitalocean.com/community/tutorials/how-to-install-go-and-set-up-a-local-programming-environment-on-windows-10) computer for building Golang applications.
 
--   A [Digitalocean account](https://www.digitalocean.com/), as the [Spaces](https://www.digitalocean.com/products/spaces/) and [App Platform](https://www.digitalocean.com/products/app-platform/) products from Digitalocean are used within this article.
+- An understanding of [GraphQL](https://graphql.org/). Although the GraphQL terminologies used in this article are explained, the [Introduction To GraphQL](https://www.digitalocean.com/community/conceptual_articles/an-introduction-to-graphql) article gives a deeper introduction into what GraphQL APIs are all about.
 
--  [Git](https://git-scm.com/) installed and configured on your local machine.
+- A [Digitalocean account](https://www.digitalocean.com/), as the [Spaces](https://www.digitalocean.com/products/spaces/) and [App Platform](https://www.digitalocean.com/products/app-platform/) products from Digitalocean are used within this article.
+
+- [Git](https://git-scm.com/) installed and configured on your local machine.
 
 ## Terminologies
 
@@ -39,16 +41,24 @@ In this article, you would use the [Gqlgen](https://github.com/99designs/gqlgen)
 
 Using the Schema First Approach feature, you get to define the data model for the API using the GraphQL [Schema Definition Language](http://graphql.org/learn/schema/) (SDL), then you generate the boilerplate code for the API from the defined schema using the code generation feature. 
 
-Execute the command below from your terminal in your project directory to create a `go.mod` file that manages the modules within the API project;
+Execute the command below from your terminal in your project directory to create a `go.mod` file that manages the modules within the digitalocean-spaces-api project;
 
 ```command 
- go mod init
+ go mod init digitalocean-spaces-graphql
 ```
 
-Next, install the Gqlgen library into your project;
+Next, create a file named tools.go within the project directory and add the content of code block below into the `tools.go` file;
+
+```go
+ package tools
+
+ import _ "github.com/99designs/gqlgen" 
+```
+
+Next, execute the [tidy](https://golang.org/ref/mod#go-mod-tidy) command below install the gqlgen dependency introduced within the `tools.go` file above.
 
 ```command
- go get github.com/99designs/gqlgen
+ go mod tidy
 ```
 
 Then using the installed Gqlgen library, generate the boilerplate files needed for a GraphQL API;
@@ -105,7 +115,7 @@ type Mutation {
 The code block above contains a schema with three types; the Upload and User types which are known as Object types in the GraphQL [Schema Definition Language](http://graphql.org/learn/schema/).
 
 <$>[note]
-**Note:** The Upload scalar type is automatically defined by Gqlgen and it contains the properties of a file. To use it, you only need to declare it at the top of the schema file, as it was done in the code block above.
+**Note:** The Upload scalar type is automatically defined by Gqlgen, and it contains the properties of a file. To use it, you only need to declare it at the top of the schema file, as it was done in the code block above.
 <$>
 
 The schema in the code block above also contains a Mutation type containing the `CreateUser` and `uploadProfileImage` fields and the `user` field returning a single user type as the `Query`. 
@@ -123,22 +133,26 @@ To utilize the code generation feature, execute the command below from a termina
  gqlgen generate 
 ```
 
-After executing the gqlgen command above, you would observe that some new files have been generated and your project now has the folder structure shown below;
+After executing the gqlgen command above, three validation errors relating to the `schema.resolvers.go` file will be printed out, and  you will also observe that some new files have been generated and your project now has the folder structure shown below;
 
 ![Generated Folder Structure](https://i.imgur.com/APlA6d7.png)
 
 Among the files shown in the image above, of interest is the `schema.resolvers.go` file. As shown in the code block below, it contains an implementation of the Mutation and Query types previously defined in the `schema.graphqls` file. 
 
+To fix the validation errors, delete the `CreateTodo` and `Todo` functions at the bottom of the `schema.resolvers.go` file. The functions were moved to the bottom of the file by Gqlgen because the type definitions were been modified in the `schema.graphqls` file, hence the validation errors.  
+
 ```go
 
 package graph
 
+// This file will be automatically regenerated based on the schema, any resolver implementations
+// will be copied through when generating and any unknown code will be moved to the end.
+
 import (
 	"context"
+	"digitalocean/graph/generated"
+	"digitalocean/graph/model"
 	"fmt"
-
-	"github.com/vickywane/graphql-api/graph/generated"
-	"github.com/vickywane/graphql-api/graph/model"
 )
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
@@ -149,16 +163,31 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
+func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
+// Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
+// Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
 ```
 
@@ -208,6 +237,10 @@ With the connection details securely stored in the .env file above, the next ste
 
 To connect to the newly created database within the cluster, you need a database driver. Execute the command below to install [go-pg](https://github.com/go-pg/pg), a golang library for translating ORM queries into SQL Queries before executing them against a Postgres database.
 
+```command
+  go get github.com/go-pg/pg/v10 
+```
+
 Create a `db.go` file within the `graph` package directory. You would gradually put together the code within the file to establish a connection with the Postgres database created in the [Managed Databases](https://www.digitalocean.com/products/managed-databases/) cluster.
 
 First, add the content of the code block below into the `db.go` file to create a user table in the Postgres database immediately after a connection to the database has been established.
@@ -218,8 +251,8 @@ package db
 
 import (
 	"fmt"
-	"github.com/go-pg/pg/v9"
-	"github.com/go-pg/pg/v9/orm"
+	"github.com/go-pg/pg/v10"
+	"github.com/go-pg/pg/v10/orm"
 	"github.com/vickywane/api/graph/model"
 	"os"
 )
@@ -338,7 +371,7 @@ package resolvers
 
 import (
 	"fmt"
-	"github.com/go-pg/pg/v9"
+	"github.com/go-pg/pg/v10"
 	"sync"
 
 	"github.com/vickywane/event-server/graph/model"
