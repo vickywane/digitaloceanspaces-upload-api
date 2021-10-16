@@ -41,10 +41,10 @@ In this article, you would use the [Gqlgen](https://github.com/99designs/gqlgen)
 
 Using the Schema First Approach feature, you get to define the data model for the API using the GraphQL [Schema Definition Language](http://graphql.org/learn/schema/) (SDL), then you generate the boilerplate code for the API from the defined schema using the code generation feature. 
 
-Execute the command below from your terminal in your project directory to create a `go.mod` file that manages the modules within the digitalocean-spaces-api project;
+Execute the command below from your terminal in your project directory to create a `go.mod` file that manages the modules within the **digitalocean** project;
 
 ```command 
- go mod init digitalocean-spaces-graphql
+ go mod init digitalocean
 ```
 
 Next, create a file named tools.go within the project directory and add the content of code block below into the `tools.go` file;
@@ -74,7 +74,7 @@ Running the `gqlgen` command above would generate a `server.go` file for running
 
 By default, the `gqlgen init` command previously executed would generate the schema for a TODO application within the `schema.graphqls` file. While this is a valid schema, the application intended for this tutorial is not a TODO application. Hence, you would need to change the boilerplate schema.
 
-To create a suitable schema for the API we are building, open the `schema.graphqls` file in your preferred code editor and replace the boilerplate schema with the schema in the code snippet below;
+To create a suitable schema for the API we are building, open the `schema.graphqls` file from the graph directory in your preferred code editor and replace the boilerplate schema with the schema in the code snippet below;
 
 
 ```graphql
@@ -87,17 +87,18 @@ type User {
   fullName: String!
   email: String!
   img_uri: String!
+  DateCreated: String!
 }
 
 type Query {
-  user: User!
+  users: [User]!
 }
 
 input NewUser {
   fullName: String!
   email: String!
   img_uri: String
-  password : String!
+  DateCreated: String
 }
 
 input ProfileImage {
@@ -139,7 +140,7 @@ After executing the gqlgen command above, three validation errors relating to th
 
 Among the files shown in the image above, of interest is the `schema.resolvers.go` file. As shown in the code block below, it contains an implementation of the Mutation and Query types previously defined in the `schema.graphqls` file. 
 
-To fix the validation errors, delete the `CreateTodo` and `Todo` functions at the bottom of the `schema.resolvers.go` file. The functions were moved to the bottom of the file by Gqlgen because the type definitions were been modified in the `schema.graphqls` file, hence the validation errors.  
+To fix the validation errors, delete the `CreateTodo` and `Todo` functions at the bottom of the `schema.resolvers.go` file. The functions were moved to the bottom of the file by Gqlgen because the type definitions have been changed in the `schema.graphqls` file.
 
 ```go
 
@@ -207,7 +208,7 @@ Although the application would not store images directly in a database, it still
 
 A user’s record would consist of a **Fullname**, **email**, **dateCreated,** and an **img_uri** field of String data type. The **img_uri** field would contain the URL pointing to an image file uploaded by a user through this GraphQL API and stored within a bucket on Digitalocean spaces.
 
-Using your Digitalocean dashboard, navigate to the Databases section of the console to create a new database cluster. By default, [PostgreSQL](https://www.postgresql.org/) would be the selected database to be provisioned within this cluster. Leave all other settings at their default values and proceed to create this cluster using the button at the bottom.
+Using your Digitalocean dashboard, navigate to the Databases section of the console to create a new database cluster, and select [PostgreSQL](https://www.postgresql.org/) from the list of databases offered. Leave all other settings at their default values and proceed to create this cluster using the button at the bottom.
 
 ![Digitalocean database cluster](https://i.imgur.com/3mlpWBj.png)
 
@@ -233,34 +234,39 @@ Create a `.env` file within the root directory of the GraphQL-API project to sec
  DB_USER=<^><USERNAME><^>
 ```
 
+<$>[note]
+**Note:** You will need to stop and start the GraphQL application to enable the new credentials added in the `.env` get loaded into the application.
+<$>
+
+
 With the connection details securely stored in the .env file above, the next step would be to connect to the database cluster through our backend application.
 
-To connect to the newly created database within the cluster, you need a database driver. Execute the command below to install [go-pg](https://github.com/go-pg/pg), a golang library for translating ORM queries into SQL Queries before executing them against a Postgres database.
+To connect to the newly created Postgres database within the cluster, you will need a database driver. 
+
+Execute the command below to install [go-pg](https://github.com/go-pg/pg), a golang library for translating ORM queries into SQL Queries for a Postgres database, and [godotenv](github.com/joho/godotenv), a golang library for loading environment credential from a `.env` file into your application.
 
 ```command
-  go get github.com/go-pg/pg/v10 
+  go get github.com/go-pg/pg/v10 github.com/joho/godotenv github.com/satori/go.uuid
 ```
 
-Create a `db.go` file within the `graph` package directory. You would gradually put together the code within the file to establish a connection with the Postgres database created in the [Managed Databases](https://www.digitalocean.com/products/managed-databases/) cluster.
+Create a `db.go` file within the `graph` directory. You would gradually put together the code within the file to establish a connection with the Postgres database created in the [Managed Databases](https://www.digitalocean.com/products/managed-databases/) cluster.
 
-First, add the content of the code block below into the `db.go` file to create a user table in the Postgres database immediately after a connection to the database has been established.
+First, add the content of the code block below into the `db.go` file to build a function (`createSchema`) that will create a user table in the Postgres database immediately after a connection to the database has been established.
 
 ```go
 [label server.go]
-package db
+package graph
 
 import (
-	"fmt"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
-	"github.com/vickywane/api/graph/model"
-	"os"
+	"digitalocean/graph/model"
 )
 
 func createSchema(db *pg.DB) error {
-	for _, models := range []interface{}{(*model.User)(nil), (*model.User)(nil)}{
-		if err := db.CreateTable(models, &orm.CreateTableOptions{
-			IfNotExists: true
+	for _, models := range []interface{}{(*model.User)(nil)}{
+		if err := db.Model(models).CreateTable(&orm.CreateTableOptions{
+			IfNotExists: true,
 		}); err != nil {
 			panic(err)
 		}
@@ -270,12 +276,19 @@ func createSchema(db *pg.DB) error {
 }
 ```
 
-Using the `IfNotExists` option passed to the `CreateTable` method from [go-pg](https://github.com/go-pg/pg), the `createSchema` function in the code block above only inserts a new table into the database if the table does not exist. You can understand this process as a simplified form of seeding a newly created database, rather than creating the Tables manually through a command-line client or GUI, the `createSchema` function takes care of the table creation.
+Using the `IfNotExists` option passed to the `CreateTable` method from [go-pg](https://github.com/go-pg/pg), the `createSchema` function in the code block above only inserts a new table into the database if the table does not exist. You can understand this process as a simplified form of seeding a newly created database, rather than creating the Tables manually through the [psql](https://www.postgresql.org/docs/13/app-psql.html) client or GUI, the `createSchema` function takes care of the table creation.
 
 Next, add the content of the code block below into the `db.go` file to establish a connection to the Postgres database and execute the `createSchema` function above when a connection has been established successfully.
 
 ```go
-[label server.go]
+[label db.go]
+
+import (
+	  // existing imports
+
+		"fmt",
+		"os"
+	)
 
 func Connect() *pg.DB {
 	DB_PASSWORD := os.Getenv("DB_PASSWORD")
@@ -302,52 +315,59 @@ func Connect() *pg.DB {
 		panic("PostgreSQL is down")
 	}
 
-	return db
+	return db 
 }
 ```
 
-The exported `Connect` function in the code block above when executed establishes a connection to a Postgres database using [go-pg](https://github.com/go-pg/pg) and returns the connection instance. This done through the following operations explained below;
+The exported `Connect` function in the code block above when executed establishes a connection to a Postgres database using [go-pg](https://github.com/go-pg/pg). This done through the following operations explained below;
 
 * First, the database credentials you stored in the root `.env` file are retrieved, then, a variable is created to store a string formatted with the retrieved credentials. This variable would be used as a connection URI when connecting with the database.
 
 * Next, the created connection string is parsed to know if the formatted credentials are valid. If valid, the connection string is passed into the `connect` method as an argument to establish a connection. 
 
-To use the exported `Connect` function, you need to add it to the `server.go` file to execute the `Connect` function when the application is started and the instance would also be available in the `Resolver` struct.
+To use the exported `Connect` function, you will need to add the function to the `server.go` file, so it will be called when the application is started, then the connection can be stored in the `DB` field within the `Resolver` struct.
 
-Open the `server.go` file in your preferred code editor and add the lines highlighted below into the `server.go` file to utilize the previously created `db` package immediately after the application is started.
+Open the `server.go` file in your preferred code editor and add the lines highlighted below into the `server.go` file to utilize the previously created `Connect` function from the `graph` package immediately after the application is started and also load the credentials from the `.env` file into the application.
 
 
 ```go
-[label db/db.go]
+[label server.go]
  package main
 
 import (
   "log"
   "net/http"
   "os"
+  "digitalocean/graph/graph"
+  "digitalocean/graph"
+  "digitalocean/graph/generated"
 
-  "github.com/vickywane/api/graph/db"
   "github.com/99designs/gqlgen/graphql/handler"
   "github.com/99designs/gqlgen/graphql/playground"
-  "github.com/vickywane/api/graph"
-  "github.com/vickywane/api/graph/generated"
+  "github.com/joho/godotenv"
 )
 
 const defaultPort = "8080"
 
 func main() {
+  err := godotenv.Load(); if err != nil {
+    log.Fatal("Error loading .env file")
+  }
+
   port := os.Getenv("PORT")
   if port == "" {
      port = defaultPort
   }
 
-  Database := db.Connect()
-  srv := handler.NewDefaultServer(
-    generated.NewExecutableSchema(generated.Config{
-       Resolvers: &graph.Resolver{
-    		DB: Database,
- 	 }
-    }))
+	Database := graph.Connect()
+	srv := handler.NewDefaultServer(
+			generated.NewExecutableSchema(
+					generated.Config{
+						Resolvers: &graph.Resolver{
+							DB: Database,
+						},
+					}),
+		)
 
   http.Handle("/", playground.Handler("GraphQL playground", "/query"))
   http.Handle("/query", srv)
@@ -357,25 +377,26 @@ func main() {
 }
 ```
 
+Within the code snippet above, you did the following; 
 
-Within the code snippet above, you expressed the Connect function from the DB package in the `Database` variable then you passed in the connected database client into the graph resolver.
+- You loaded the credentials stored in the `.env` through the [Load()](https://github.com/joho/godotenv/blob/c40e9c6392b05ba58e6fea50091ce35a1ef020e7/godotenv.go#L42) function. 
 
-Lastly, you need to specify the data type of the DB field you added in the Resolver struct above.
+- You called the `Connect` function from the `db` package and also created the `Resolver` object with the database connection stored in the `DB` field. The stored database connection will be accessed by the resolvers in later parts of this tutorial.
 
-To achieve this, open the `resolver.go` file and modify the Resolver struct to have a DB field with a `go-pg` pointer as its type as shown below;
+Currently, the boilerplate `Resolver` struct in the `resolver.go` file does not contain the `DB` field where you stored the database connection in the code above. Let's proceed to create the DB field. 
+
+Open the `resolver.go` file and modify the Resolver struct to have a DB field with a `go-pg` pointer as its type as shown below;
 
 
 ``` go
 [label resolver.go]
 package resolvers
 
-import (
-	"fmt"
-	"github.com/go-pg/pg/v10"
-	"sync"
+import "github.com/go-pg/pg/v10"
 
-	"github.com/vickywane/event-server/graph/model"
-)
+// This file will not be regenerated automatically.
+//
+// It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
 	DB *pg.DB
@@ -392,7 +413,7 @@ Now a database connection would be established each time the entry `server.go` f
 
 Going through the `schema.graphqls` file, there are only two mutation resolvers generated. One with the purpose of handling the user's creation, while the other handles the profile image uploads.
 
-Modify the `CreateUser` mutation with the code snippet below to insert a new row containing the user details input into the database
+Open the `schema.resolver.go` file, then modify the imports and the `CreateUser` mutation with the code snippet below to insert a new row containing the user details input into the database
 
 
 ```go
@@ -405,26 +426,26 @@ import (
   "time"
 
   "github.com/satori/go.uuid"
-  "github.com/vickywane/api/graph/generated"
-  "github.com/vickywane/api/graph/model"
+  "digitalocean/graph/generated"
+  "digitalocean/graph/model"
 )
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
-  user := model.User{
-     ID:          fmt.Sprintf("%v", uuid.NewV4()),
-     FullName:    input.FullName,
-     Password:    input.Password,
-     Email:       input.Email,
-     ImgURI:      "https://bit.ly/3mCSn2i",
-     DateCreated: time.Now().Format("01-02-2006"),
-  }
+	user := model.User{
+		ID:          fmt.Sprintf("%v", uuid.NewV4()),
+		FullName:    input.FullName,
+		Email:       input.Email,
+		ImgURI:      "https://bit.ly/3mCSn2i",
+		DateCreated: time.Now().Format("01-02-2006"),
+	}
 
-  if err := r.DB.Insert(&user); err != nil {
-     return nil, fmt.Errorf("error inserting user: %v", err)
-  }
+	_, err := r.DB.Model(&user).Insert(); if err != nil {
+		return nil, fmt.Errorf("error inserting user: %v", err)
+	}
 
-  return &user, nil
+	return &user, nil
 }
+
 ```
 
 
@@ -433,7 +454,13 @@ Going through the `CreateUser` mutation in the code snippet above, you would obs
 *   Each row inserted is given a unique UUID formatted as a string.
 *   The `ImgURI` field in each row has a placeholder image URL as the default value. This would be updated when a user uploads a new image. 
 
-To test the resolver above from your browser, navigate to `http://localhost:8080` to access the GraphQL playground built-in to your GraphQL API. Paste the GraphQL Mutation in the code block below into the playground editor to insert a new user record.
+Run the `server.go` file through the command below to test the application that has been built at this point.
+
+```command
+go run ./server.go
+```
+
+Next, navigate to `http://localhost:8080` through your web browser to access the GraphQL playground built-in to your GraphQL API. Paste the GraphQL Mutation in the code block below into the playground editor to insert a new user record.
 
 ```graphql
 [label graphql]
@@ -474,14 +501,17 @@ import (
   "time"
 
   "github.com/satori/go.uuid"
-  "github.com/vickywane/api/graph/generated"
-  "github.com/vickywane/api/graph/model"
+  "digitalocean/graph/generated"
+  "digitalocean/graph/model"
 )
 
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
   var users []*model.User
 
-  r.DB.Model(&users).Select()
+  err := r.DB.Model(&users).Select()
+	if err != nil {
+		return nil, err
+	}
 
   return users, nil  
 }
@@ -519,13 +549,23 @@ Click the **Create New Space** button, leaving other settings at their default v
 
 ![Digitalocean spaces](https://i.imgur.com/Aifnmzf.png)
 
-After a new Space has been created, navigate to the settings tab and copy the space’s endpoint into the GraphQL project environment variables.
-
+After a new Space has been created, navigate to the settings tab and copy the space’s endpoint, name and region into the `.env` file, within the GraphQL project in the format below;
 
 ```bash
 [label .env]
 SPACE_ENDPOINT=<^><BUCKET_ENDPOINT><^>
+DO_SPACE_REGION=<^><DO_SPACE_REGION><^>
+DO_SPACE_NAME=<^><DO_SPACE_NAME><^>
 ```
+
+<$>[note]
+**Note:** You will need to stop and start the GraphQL application to enable the new credentials added in the `.env` get loaded into the application.
+<$>
+
+As an example, the image below highlights where the name, region, and endpoint of the `Victory-space` created are placed within the settings tab; 
+
+![Victory-space endpoint, name, and region](https://i.imgur.com/sOhNjf5.png)
+
 
 One last thing to do before leaving the Digitalocean console is to generate an Access Key and an Access Secret for use within the GraphQL Application. 
 
@@ -575,20 +615,20 @@ import (
    "github.com/aws/aws-sdk-go/service/s3"
    "io"
 
-   "github.com/vickywane/api/graph/generated"
-   "github.com/vickywane/api/graph/model"
+   "digitalocean/graph/generated"
+   "digitalocean/graph/model"
 )
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
 <^><^>
 <^>  SpaceName := os.Getenv("DO_SPACE_NAME")<^>
 <^>	SpaceRegion := os.Getenv("DO_SPACE_REGION")<^>
-<^>	key := os.Getenv("ACCESS_KEY")<^>
-<^>	secret := os.Getenv("ACCESS_SECRET")<^>
+<^>	accessKey := os.Getenv("ACCESS_KEY")<^>
+<^>	secretKey := os.Getenv("SECRET_KEY")<^>
 <^><^>
 <^>	s3Config := &aws.Config{<^>
-<^>		Credentials: credentials.NewStaticCredentials(key, secret, ""),<^>
-<^>		Endpoint:    aws.String(fmt.Sprintf("https://%v.digitaloceanspaces.com", SpaceRegion)),<^>
+<^>		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),<^>
+<^>		Endpoint:    aws.String(os.Getenv("SPACE_ENDPOINT")),<^>
 <^>		Region:      aws.String(SpaceRegion),<^>
 <^>	}<^>
 <^><^>
@@ -596,11 +636,10 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 <^>	s3Client := s3.New(newSession)<^>
 <^><^>
  
-	return true, nil
 }
 ```
 
-With the SDK configured above, the next line of action is to upload the file sent in the [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/).
+With the SDK being used above, the next line of action is to upload the file sent in the [multipart HTTP request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/).
 
 A way to handle files sent is to read the content from the [multipart request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/), temporarily save the content to a new file in memory, then upload the temporary file using the `aws-SDK-go` library, then delete it after an upload. 
 
@@ -628,8 +667,23 @@ import (
 )
 
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
- <^><^>
-<^>  userFileName := fmt.Sprintf("%v-img.png", input.UserID)<^>
+
+	SpaceRegion := os.Getenv("DO_SPACE_REGION")
+	accessKey := os.Getenv("ACCESS_KEY")
+	secretKey := os.Getenv("SECRET_KEY")
+  SpaceName := os.Getenv("DO_SPACE_NAME")
+
+	s3Config := &aws.Config{
+		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
+		Endpoint:    aws.String(os.Getenv("SPACE_ENDPOINT")),
+		Region:      aws.String(SpaceRegion),
+	}
+
+	newSession := session.New(s3Config
+	s3Client := s3.New(newSession
+
+<^><^>
+<^>  userFileName := fmt.Sprintf("%v-%v", input.UserID, input.File.Filename)<^>
 <^>  stream, readErr := ioutil.ReadAll(input.File.File)<^>
 <^>	if readErr != nil {<^>
 <^>		fmt.Printf("error from file %v", readErr)<^>
@@ -652,7 +706,7 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 <^><^>
 <^>	object := s3.PutObjectInput{<^>
 <^>		Bucket: aws.String(SpaceName),<^>
-<^>		Key:    aws.String(fmt.Sprintf("%v-%v", *input.UserID, input.File.Filename)),<^>
+<^>		Key:    aws.String(userFileName),<^>
 <^>		Body:   fileBytes,<^>
 <^>		ACL:    aws.String("public-read"),<^>
 <^>	}<^>
@@ -681,7 +735,7 @@ After creating the `PutObjectInput` struct, the `PutObject` method is used to ma
 To test the upload implementation in the mutation resolver, execute the command below to make an HTTP request to the GraphQL API using cURL, adding an image into the request form body.
 
 ``` command
-curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImage($image: Upload! $userId : String!) { uploadProfileImage(input: { file: $image  userId : $userId}) }", "variables": { "image": null, "userId" : "121212" } }' -F map='{ "0": ["variables.image"] }'  -F 0=@sample.jpeg
+curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImage($image: Upload! $userId : String!) { uploadProfileImage(input: { file: $image  userId : $userId}) }", "variables": { "image": null, "userId" : "9d9e4577-a0b7-479a-8864-1acdfb61428d" } }' -F map='{ "0": ["variables.image"] }'  -F 0=@sample.jpeg
 ```
 
 After the command above has been executed to upload a file, the following stringified data would be printed out in the terminal as the request's response, indicating that the file upload was successful.
@@ -723,7 +777,7 @@ The first `GetUserByField` function above accepts a `field` and `value` argument
 
 The second `UpdateUser` function in the code block uses go-pg to execute an `UPDATE` statement to update a record in the user table. Using the where method attached, a `WHERE` clause with a condition is added to the `UPDATE` statement to update only the row having the same `ID` passed into the function.
 
-Now you can make use of the two helper functions in the `UploadProfileImage` mutation. Add the content of the highlighted code block below to retrieve a specific row from the user table, and update the `img_uri` field in the user's record after the file has been uploaded.
+Now you can make use of the two helper functions in the `UploadProfileImage` mutation. Add the content of the highlighted code block below to the `UploadProfileImage` function within the `schema.resolvers.go` file retrieve to a specific row from the user table, and update the `img_uri` field in the user's record after the file has been uploaded.
 
 ```go
 [label schema.resolvers.go]
@@ -761,9 +815,8 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 <^> 	if _, err := r.UpdateUser(user); err != nil {<^>
 <^>		return false, fmt.Errorf("err updating user: %v", err)<^>
 <^>	}<^>
- 
-
-	return true, nil
+<^><^>
+<^>	return true, nil<^>
 }
 ```
 

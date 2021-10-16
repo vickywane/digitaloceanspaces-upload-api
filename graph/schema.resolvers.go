@@ -7,67 +7,64 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"io/ioutil"
+	"os"
+	"digitaloceanspaces-upload-api/graph/generated"
+	"digitaloceanspaces-upload-api/graph/model"
+	"time"
 
 	"github.com/satori/go.uuid"
-	"github.com/vickywane/api/graph/generated"
-	"github.com/vickywane/api/graph/model"
 )
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
 	user := model.User{
 		ID:          fmt.Sprintf("%v", uuid.NewV4()),
 		FullName:    input.FullName,
-		Password:    input.Password,
 		Email:       input.Email,
 		ImgURI:      "https://bit.ly/3mCSn2i",
 		DateCreated: time.Now().Format("01-02-2006"),
 	}
 
-	if err := r.DB.Insert(&user); err != nil {
+	_, err := r.DB.Model(&user).Insert()
+	if err != nil {
 		return nil, fmt.Errorf("error inserting user: %v", err)
 	}
 
 	return &user, nil
 }
 
-func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
-	panic("not done")
-}
-
 func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.ProfileImage) (bool, error) {
 	SpaceName := os.Getenv("DO_SPACE_NAME")
 	SpaceRegion := os.Getenv("DO_SPACE_REGION")
-	key := os.Getenv("ACCESS_KEY")
-	secret := os.Getenv("ACCESS_SECRET")
+	accessKey := os.Getenv("ACCESS_KEY")
+	secret := os.Getenv("SECRET_KEY")
 
 	s3Config := &aws.Config{
-		Credentials: credentials.NewStaticCredentials(key, secret, ""),
-		Endpoint:    aws.String(fmt.Sprintf("https://%v.digitaloceanspaces.com", SpaceRegion)),
+		Credentials: credentials.NewStaticCredentials(accessKey, secret, ""),
+		Endpoint:    aws.String(os.Getenv("SPACE_ENDPOINT")),
 		Region:      aws.String(SpaceRegion),
 	}
 
 	newSession := session.New(s3Config)
 	s3Client := s3.New(newSession)
 
+	userFileName := fmt.Sprintf("%v-%v", input.UserID, input.File.Filename)
+
 	stream, readErr := ioutil.ReadAll(input.File.File)
 	if readErr != nil {
 		fmt.Printf("error from file %v", readErr)
 	}
 
-	fileErr := ioutil.WriteFile("image.png", stream, 0644)
+	fileErr := ioutil.WriteFile(userFileName, stream, 0644)
 	if fileErr != nil {
 		fmt.Printf("file err %v", fileErr)
 	}
 
-	file, openErr := os.Open("image.png")
+	file, openErr := os.Open(userFileName)
 	if openErr != nil {
 		fmt.Printf("Error opening file: %v", openErr)
 	}
@@ -80,18 +77,18 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 
 	fileBytes := bytes.NewReader(buffer)
 
-	object := s3.PutObjectInput{
+	object := &s3.PutObjectInput{
 		Bucket: aws.String(SpaceName),
-		Key:    aws.String(fmt.Sprintf("%v-%v", *input.UserID, input.File.Filename)),
+		Key:    aws.String(userFileName),
 		Body:   fileBytes,
 		ACL:    aws.String("public-read"),
 	}
 
-	if _, uploadErr := s3Client.PutObject(&object); uploadErr != nil {
+	if _, uploadErr := s3Client.PutObject(object); uploadErr != nil {
 		return false, fmt.Errorf("error uploading file: %v", uploadErr)
 	}
 
-	_ = os.Remove("image.png")
+	_ = os.Remove(userFileName)
 
 	user, userErr := r.GetUserByField("ID", *input.UserID)
 
@@ -99,9 +96,11 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 		return false, fmt.Errorf("error getting user: %v", userErr)
 	}
 
-	user.ImgURI = fmt.Sprintf("https://%v.%v.digitaloceanspaces.com/%v-%v", SpaceName, SpaceRegion, *input.UserID, input.File.Filename)
+	fileUrl := fmt.Sprintf("https://%v.%v.digitaloceanspaces.com/%v-%v", SpaceName, SpaceRegion, *input.UserID, input.File.Filename)
 
- 	if _, err := r.UpdateUser(user); err != nil {
+	user.ImgURI = fileUrl
+
+	if _, err := r.UpdateUser(user); err != nil {
 		return false, fmt.Errorf("err updating user: %v", err)
 	}
 
@@ -111,7 +110,10 @@ func (r *mutationResolver) UploadProfileImage(ctx context.Context, input model.P
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	var users []*model.User
 
-	_ = r.DB.Model(&users).Select()
+	err := r.DB.Model(&users).Select()
+	if err != nil {
+		return nil, err
+	}
 
 	return users, nil
 }

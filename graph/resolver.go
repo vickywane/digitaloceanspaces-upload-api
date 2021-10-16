@@ -3,7 +3,7 @@ package graph
 import (
 	"fmt"
 	"github.com/go-pg/pg/v10"
-	"github.com/vickywane/api/graph/model"
+	"digitaloceanspaces-upload-api/graph/model"
 )
 
 type Resolver struct{

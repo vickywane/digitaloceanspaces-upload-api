@@ -1,17 +1,17 @@
-package db
+package graph
 
 import (
 	"fmt"
-	"github.com/go-pg/pg/v9"
-	"github.com/go-pg/pg/v9/orm"
-	"github.com/vickywane/api/graph/model"
+	"github.com/go-pg/pg/v10"
+	"github.com/go-pg/pg/v10/orm"
 	"os"
+	"digitaloceanspaces-upload-api/graph/model"
 )
 
 func createSchema(db *pg.DB) error {
-	for _, models := range []interface{}{(*model.User)(nil), (*model.User)(nil)}{
-		if err := db.CreateTable(models, &orm.CreateTableOptions{
-			IfNotExists: true, FKConstraints: false, // Todo: turned this off because of VOLUNTEER table. Check out later!!
+	for _, models := range []interface{}{(*model.User)(nil)} {
+		if err := db.Model(models).CreateTable(&orm.CreateTableOptions{
+			IfNotExists: true,
 		}); err != nil {
 			panic(err)
 		}
@@ -29,12 +29,11 @@ func Connect() *pg.DB {
 
 	connStr := fmt.Sprintf(
 		"postgresql://%v:%v@%v:%v/%v?sslmode=require",
-		DB_USER, DB_PASSWORD, DB_ADDR, DB_PORT, DB_NAME )
+		DB_USER, DB_PASSWORD, DB_ADDR, DB_PORT, DB_NAME)
 
 	opt, err := pg.ParseURL(connStr)
-
 	if err != nil {
-	    panic(err)
+		panic(err)
 	}
 
 	db := pg.Connect(opt)
