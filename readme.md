@@ -1,6 +1,6 @@
 # How To Build a GraphQL API With Golang to Upload Files to DigitalOcean Spaces 🚀
 This repository contains the completed GraphQL application built in my technical article published on Digitalocean's Developer blog.
-Built with ❤️ by [Victory Nwani](https://www.linkedin.com/in/victory-nwani-b820b2157/) ( Send me a message if you're hiring 😃 )
+Built with ❤️ by [Victory Nwani](https://www.linkedin.com/in/victory-nwani-b820b2157/) (Send me a message if you're hiring 😃 )
 
 ## Needed Stuff
 
@@ -75,8 +75,7 @@ Execute the command below from a terminal with `curl` installed to make a http r
 
 **Note:** Execute the command below from this project's root directory to use the `sample.jpeg` image as a test file.
 
-```
-bash 
+```bash
 curl localhost:8080/query  -F operations='{ "query": "mutation uploadProfileImage($image: Upload! $userId : String!) { uploadProfileImage(input: { file: $image  userId : $userId}) }", "variables": { "image": null, "userId" : "121212" } }' -F map='{ "0": ["variables.image"] }'  -F 0=@sample.jpeg
 ```
 
